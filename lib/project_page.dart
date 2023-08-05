@@ -22,6 +22,8 @@ class _MyProjectPageState extends State<MyProjectPage> {
   int _currentIndex = 0;
   File? profilePicture;
   final TextEditingController _searchController = TextEditingController();
+  FocusNode _searchFocusNode = FocusNode();
+
   ProjectsModel? projectsModel;
     
   @override
@@ -51,7 +53,11 @@ class _MyProjectPageState extends State<MyProjectPage> {
     List<String> keywords = searchText.split(',');
     // Remove leading and trailing whitespaces from each keyword
     keywords = keywords.map((keyword) => keyword.trim()).toList();
+
     projectsModel!.updateProjectsForSearch(keywords, 10);
+
+    // Unfocus the text field to dismiss the keyboard after search
+    _searchFocusNode.unfocus();
   
   }
   @override
@@ -144,6 +150,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
                 widthFactor: 0.75,
                 child: TextField(
                   controller: _searchController,
+                  focusNode: _searchFocusNode,
                   decoration: InputDecoration(
                     hintText: 'Search for projects',
                     border: InputBorder.none,
