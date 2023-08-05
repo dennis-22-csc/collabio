@@ -1,0 +1,1 @@
+A platform to enable developers and designers to find projects they can collaborate on.
