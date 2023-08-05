@@ -10,6 +10,7 @@ class Project {
   final String posterName;
   final String posterEmail;
   final String posterAbout;
+  double matchPercentage;
 
   Project({
     required this.id,
@@ -20,6 +21,7 @@ class Project {
     required this.posterName,
     required this.posterEmail,
     required this.posterAbout,
+    this.matchPercentage = 0.0,
   });
 
    @override
@@ -128,6 +130,23 @@ class MessagesModel extends ChangeNotifier {
 
   Future<void> updateGroupedMessages(String currentUserEmail) async {
     groupedMessages = await DatabaseHelper.getGroupedMessages(currentUserEmail);
+    notifyListeners();
+  }
+}
+
+class ProjectsModel extends ChangeNotifier {
+  List<Project> recentProjects = [];
+  List<Project> matchingProjects = [];
+
+  Future<void> updateProjectsForRefresh(List<String> keywords, int limit) async {
+    recentProjects = await DatabaseHelper.getRecentProjects(limit);
+    matchingProjects = await DatabaseHelper.getMatchingProjectsAll(keywords, limit);
+    notifyListeners();
+  }
+
+  Future<void> updateProjectsForSearch(List<String> keywords, int limit) async {
+    recentProjects = await DatabaseHelper.getMatchingProjectsRecent(keywords, limit);
+    matchingProjects = await DatabaseHelper.getMatchingProjectsAll(keywords, limit);
     notifyListeners();
   }
 }

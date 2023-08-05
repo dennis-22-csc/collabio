@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 class DataSender {
   Future<Map<String, dynamic>> sendNewMessage(Map<String, dynamic> message) async {
-    final url = 'http://collabio.denniscode.tech/message';
+    const url = 'http://collabio.denniscode.tech/message';
     final response = await http.post(
       Uri.parse(url),
       headers: {'Content-Type': 'application/json'},
@@ -15,7 +15,7 @@ class DataSender {
   }
 
   Future<Map<String, dynamic>> createNewProject(Map<String, dynamic> project) async {
-    final url = 'http://collabio.denniscode.tech/project';
+    const url = 'http://collabio.denniscode.tech/project';
     final response = await http.post(
       Uri.parse(url),
       headers: {'Content-Type': 'application/json'},
@@ -40,7 +40,7 @@ void main() async {
         .format(DateTime.now().subtract(const Duration(minutes: 60 * 4))),
   };
 
-final project1 = {
+/*final project1 = {
     'title': 'Build a Social Networking Platform',
     'timestamp': DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now().subtract(const Duration(minutes: 60 * 4))),
@@ -108,11 +108,11 @@ If you are interested in contributing to this app and helping people achieve the
     'tags': ['Mobile App Development', 'Personal Finance', 'iOS', 'Android'],
     'poster_name': 'Ola',
     'poster_email': 'olasmith@gmail.com'
-};
+};*/
 
   final messageResponse = await dataSender.sendNewMessage(message);
   print('Message response: $messageResponse');
 
-  final projectResponse = await dataSender.createNewProject(project1);
-  print('Project response: $projectResponse');
+  /*final projectResponse = await dataSender.createNewProject(project1);
+  print('Project response: $projectResponse');*/
 }

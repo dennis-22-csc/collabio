@@ -8,7 +8,8 @@ import 'package:collabio/create_profile.dart';
 import 'package:collabio/user_login.dart';
 import 'package:collabio/post_project.dart';
 import 'package:collabio/inbox_screen.dart';
-
+import 'package:provider/provider.dart';
+import 'package:collabio/model.dart';
 
 class MyProjectPage extends StatefulWidget {
   const MyProjectPage({Key? key}) : super(key: key);
@@ -20,12 +21,16 @@ class MyProjectPage extends StatefulWidget {
 class _MyProjectPageState extends State<MyProjectPage> {
   int _currentIndex = 0;
   File? profilePicture;
-
+  final TextEditingController _searchController = TextEditingController();
+  ProjectsModel? projectsModel;
+    
   @override
   void initState() {
     super.initState();
     // Load the profile picture during initialization
     loadProfilePicture();
+    projectsModel = Provider.of<ProjectsModel>(context, listen: false);
+    projectsModel!.updateProjectsForRefresh(["web development", "frontend"], 10);
   }
 
   void loadProfilePicture() async {
@@ -39,6 +44,15 @@ class _MyProjectPageState extends State<MyProjectPage> {
         });
       }
     }
+  }
+
+  void handleSearch() {
+    String searchText = _searchController.text;
+    List<String> keywords = searchText.split(',');
+    // Remove leading and trailing whitespaces from each keyword
+    keywords = keywords.map((keyword) => keyword.trim()).toList();
+    projectsModel!.updateProjectsForSearch(keywords, 10);
+  
   }
   @override
   Widget build(BuildContext context) {
@@ -129,15 +143,14 @@ class _MyProjectPageState extends State<MyProjectPage> {
               child: FractionallySizedBox(
                 widthFactor: 0.75,
                 child: TextField(
+                  controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Search for projects',
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.fromLTRB(16.0, 8.0, 8.0, 8.0),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.search),
-                      onPressed: () {
-                        // Handle search button click
-                      },
+                      onPressed: handleSearch,
                     ),
                   ),
                 ),

@@ -105,11 +105,10 @@ class DatabaseHelper {
   return insertedIds;
   }
 
-static Future<String> insertMessageFromApi(Map<String, dynamic> jsonData) async {
+static Future<void> insertMessageFromApi(Map<String, dynamic> jsonData) async {
   Database db = await _database; 
   final Message message = Message.fromMap(jsonData);
   await db.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
-  return message.id;
 }
 
 static Future<void> insertProjectFromApi(Map<String, dynamic> jsonData) async { 
@@ -140,86 +139,77 @@ static Future<void> insertProjectFromApi(Map<String, dynamic> jsonData) async {
     ));
   }
 
-  /*static Future<List<Project>> getRecentProjects(int limit) async {
-  Database db = await _database;
-  final List<Map<String, dynamic>> maps = await db.query(
-    _projectsTable,
-    orderBy: "$columnTimestamp DESC",
-    limit: limit,
-  );
-  return List.generate(maps.length, (index) => Project.fromMap(maps[index]));
-}*/
-
-  // Function to get projects that match the freelancer's profile
-  /*static Future<List<Project>> getMatchingProjects(List<String> freelancerSkills) async {
+  static Future<List<Project>> getMatchingProjectsAll(List<String> keywords, int numProjectsToReturn) async {
     Database db = await _database;
     final List<Map<String, dynamic>> maps = await db.query(_projectsTable);
 
-    List<Project> matchingProjects = maps
-        .map((map) => Project(
-              id: map[columnProjectId],
-              title: map[columnTitle],
-              timestamp: map[columnTimestamp],
-              description: map[columnDescription],
-              tags: map[columnTags].split(','), // Convert the comma-separated string back to a list
-              posterName: map[columnPosterName],
-              posterEmail: map[columnPosterEmail],
-              posterAbout: map[columnPosterAbout],
-            ))
-        .toList();
+    List<Project> projects = maps
+      .map((map) => Project(
+            id: map[columnProjectId],
+            title: map[columnTitle],
+            timestamp: map[columnTimestamp],
+            description: map[columnDescription],
+            tags: map[columnTags].split(','), // Convert the comma-separated string back to a list
+            posterName: map[columnPosterName],
+            posterEmail: map[columnPosterEmail],
+            posterAbout: map[columnPosterAbout],
+          ))
+      .toList();
+  return getMatchingProjects(keywords, projects, numProjectsToReturn);
+}
 
-    // Filter the projects based on the percentage of matching skills
-    matchingProjects = matchingProjects.where((project) {
-      List<String> projectSkills = project.tags;
-      int matchingCount = 0;
+static Future<List<Project>> getMatchingProjectsRecent(List<String> keywords, int numProjectsToReturn) async {
+    List<Project> projects = await getRecentProjects(numProjectsToReturn);
+    return getMatchingProjects(keywords, projects, numProjectsToReturn);
+  }
 
-      for (String skill in freelancerSkills) {
-        if (projectSkills.contains(skill)) {
-          matchingCount++;
+
+  static Future<List<Project>> getMatchingProjects(List<String> keywords, List<Project> projects, int numProjectsToReturn) async {
+    // Calculate match percentage for each project based on skills in description and tags
+    for (Project project in projects) {
+      List<String> projectTags = project.tags.map((tag) => tag.trim().toLowerCase()).toList();
+      List<String> projectTitleWords = project.title.toLowerCase().split(' ');
+
+      int matchingTagCount = 0;
+      int matchingTitleCount = 0;
+
+      for (String skill in keywords) {
+        if (projectTags.contains(skill)) {
+          matchingTagCount++;
+        }
+
+        if (projectTitleWords.contains(skill.toLowerCase())) {
+          matchingTitleCount++;
         }
       }
 
-      double matchPercentage = (matchingCount / freelancerSkills.length) * 100;
-      return matchPercentage >= 60;
-    }).toList();
-
-    return matchingProjects;
-  }*/
-
-  static Future<List<Project>> getMatchingProjects(List<String> freelancerSkills, int rankingPoolSize) async {
-  Database db = await _database;
-  final List<Map<String, dynamic>> maps = await db.query(_projectsTable);
-
-  List<Project> matchingProjects = maps
-      .map((map) => Project.fromMap(map))
-      .toList();
-
-  // Calculate the matching percentage for each project and store it in a map
-  Map<Project, double> projectMatchPercentage = {};
-  for (var project in matchingProjects) {
-    List<String> projectSkills = project.tags;
-    int matchingCount = 0;
-
-    for (String skill in freelancerSkills) {
-      if (projectSkills.contains(skill)) {
-        matchingCount++;
-      }
+      double tagWeight = 2; // Tags are assigned more weight
+      double matchPercentage = ((matchingTagCount * tagWeight) + matchingTitleCount) /
+        (keywords.length * tagWeight + projectTitleWords.length) * 100;
+      project.matchPercentage = matchPercentage;
     }
 
-    double matchPercentage = (matchingCount / freelancerSkills.length) * 100;
-    projectMatchPercentage[project] = matchPercentage;
-  }
+    // Filter projects based on matching skills in description and tags
+    projects = projects.where((project) {
+      List<String> projectTags = project.tags.map((tag) => tag.trim().toLowerCase()).toList();
+      List<String> projectTitleWords = project.title.toLowerCase().split(' ');
 
-  // Sort the projects based on the matching percentage in descending order
-  List<Project> rankedProjects = projectMatchPercentage.keys.toList()
-    ..sort((a, b) => projectMatchPercentage[b]!.compareTo(projectMatchPercentage[a]!));
+      for (String keyword in keywords) {
+        if (projectTags.contains(keyword) || projectTitleWords.contains(keyword.toLowerCase())) {
+          return true; // Include the project in the matching list
+        }
+      }
 
-  // Take the top N projects from the ranking pool
-  int limit = rankingPoolSize <= rankedProjects.length ? rankingPoolSize : rankedProjects.length;
-  List<Project> topProjects = rankedProjects.sublist(0, limit);
+      return false; // Exclude the project from the matching list
+    }).toList();
 
-  return topProjects;
+    // Sort projects based on match percentage (higher to lower)
+    projects.sort((a, b) => b.matchPercentage.compareTo(a.matchPercentage));
+
+    // Return the top numProjectsToReturn matching projects
+    return projects.take(numProjectsToReturn).toList();
 }
+
 
   // Function to retrieve all messages in groups based on the email address of the other party
   static Future<Map<String, List<Message>>> getGroupedMessages(String currentUserEmail) async {

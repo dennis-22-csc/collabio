@@ -1,105 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:collabio/view_project.dart';
 import 'package:collabio/model.dart';
-import 'package:collabio/database.dart';
+import 'package:provider/provider.dart';
 
-class MatchingProjectsTab extends StatefulWidget {
+class MatchingProjectsTab extends StatelessWidget {
   const MatchingProjectsTab({Key? key}) : super(key: key);
 
   @override
-  State<MatchingProjectsTab> createState() => _MatchingProjectsTabState();
-}
-
-class _MatchingProjectsTabState extends State<MatchingProjectsTab> {
-  List<Project> matchingProjects = [];
-  ThemeData appTheme = ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      useMaterial3: true,
-    );
-  bool isLoading = true;
-
-
-  @override
-  void initState() {
-    super.initState();
-    fetchData();
-  }
-
-  Future<void> fetchData() async {
-    try {
-      List<String> freelancerSkills = ['flutter', 'firebase', 'UI design'];
-      final results = await DatabaseHelper.getMatchingProjects(freelancerSkills, 10);
-
-      setState(() {
-      matchingProjects = results;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      // Handle error or display error message
-    }
-  }
-
-  
-
-  @override
   Widget build(BuildContext context) {
-    return isLoading
-        ? CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(appTheme.colorScheme.onPrimary), backgroundColor: appTheme.colorScheme.onBackground,
-                    )
-        : ProjectsListWidget(projects: matchingProjects);
+    final projectsModel = Provider.of<ProjectsModel>(context);
+    final matchingProjects = projectsModel.matchingProjects;
+    return ProjectsListWidget(projects: matchingProjects);
   }
 }
 
-class RecentProjectsTab extends StatefulWidget {
+class RecentProjectsTab extends StatelessWidget {
   const RecentProjectsTab({Key? key}) : super(key: key);
 
   @override
-  State<RecentProjectsTab> createState() => _RecentProjectsTabState();
-}
-
-class _RecentProjectsTabState extends State<RecentProjectsTab> {
-  List<Project> recentProjects = [];
-  ThemeData appTheme = ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      useMaterial3: true,
-    );
-  bool isLoading = true;
-
-
-  @override
-  void initState() {
-    super.initState();
-    fetchData();
-  }
-
-  Future<void> fetchData() async {
-    try {
-      final results = await DatabaseHelper.getRecentProjects(10);
-      setState(() {
-        recentProjects = results;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      // Handle error or display error message
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return isLoading
-        ? CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(appTheme.colorScheme.onPrimary), backgroundColor: appTheme.colorScheme.onBackground,
-                    )
-        : ProjectsListWidget(projects: recentProjects);
+    final projectsModel = Provider.of<ProjectsModel>(context);
+    final recentProjects = projectsModel.recentProjects;
+    return  ProjectsListWidget(projects: recentProjects);
   }
 }
+
 
 class ProjectsListWidget extends StatelessWidget {
   final List<Project> projects;

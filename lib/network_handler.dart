@@ -99,14 +99,16 @@ Future<void> connectToSocket(BuildContext context, String currentUserEmail) asyn
       });
 
       socket.on('new_message', (data) {
+        List<String> messageIds = [];
         final message = jsonDecode(data);
         final messageId = message['message_id'];
         if (!receivedMessageIds.contains(messageId)) {
           DatabaseHelper.insertMessageFromApi(message);
+          messageIds.add(messageId);
           final messagesModel = Provider.of<MessagesModel>(context, listen: false);
           messagesModel.updateGroupedMessages(currentUserEmail);
-  
           receivedMessageIds.add(messageId);
+          deleteMessages(messageIds);
         }
       });
 

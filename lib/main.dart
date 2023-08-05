@@ -20,12 +20,16 @@ void main() {
   runApp(
     DevicePreview(
       enabled: false,
-      builder: (context) => ChangeNotifierProvider(
-        create: (context) => MessagesModel(),
+      builder: (context) => MultiProvider(
+        providers: [
+          ChangeNotifierProvider<MessagesModel>(create: (context) => MessagesModel()),
+          ChangeNotifierProvider<ProjectsModel>(create: (context) => ProjectsModel()),
+        ],
         child: MyApp(key: UniqueKey()),
       ),
     ),
   );
+  
 }
 
 class MyApp extends StatefulWidget {
@@ -101,7 +105,6 @@ class _MyAppState extends State<MyApp> {
 
       // Call the /del-messages API with all UUIDs (both inserted and failed)
       await deleteMessages(allUuids);
-
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         //Get initial messages from local database
         final messagesModel = Provider.of<MessagesModel>(context, listen: false);
