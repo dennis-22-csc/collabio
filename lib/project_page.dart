@@ -151,6 +151,9 @@ class _MyProjectPageState extends State<MyProjectPage> {
                 child: TextField(
                   controller: _searchController,
                   focusNode: _searchFocusNode,
+                  onSubmitted: (_) {
+                    handleSearch(); // Trigger the search when Enter is tapped
+                  },
                   decoration: InputDecoration(
                     hintText: 'Search for projects',
                     border: InputBorder.none,
