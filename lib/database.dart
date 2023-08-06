@@ -105,13 +105,26 @@ class DatabaseHelper {
   return insertedIds;
   }
 
-static Future<void> insertMessageFromApi(Map<String, dynamic> jsonData) async {
+static Future<bool> insertMessage(Map<String, dynamic> jsonData) async {
   Database db = await _database; 
   final Message message = Message.fromMap(jsonData);
   await db.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
+  return true;
 }
 
-static Future<void> insertProjectFromApi(Map<String, dynamic> jsonData) async { 
+static Future<bool> deleteMessage(String messageId) async {
+  Database db = await _database;
+  int rowsDeleted = await db.delete(
+    _messagesTable,
+    where: 'message_id = ?',
+    whereArgs: [messageId],
+  );
+
+  return rowsDeleted > 0;
+}
+
+
+static Future<void> insertProject(Map<String, dynamic> jsonData) async { 
   Database db = await _database; 
   final Project project = Project.fromMap(jsonData);
   await db.insert(_projectsTable, project.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);

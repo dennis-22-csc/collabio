@@ -2,6 +2,7 @@ import 'package:collabio/util.dart';
 import 'package:flutter/material.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
 import 'package:collabio/network_handler.dart';
+import 'package:collabio/exceptions.dart';
 
 class ProjectUploadScreen extends StatefulWidget {
   const ProjectUploadScreen({Key? key}) : super(key: key);
@@ -55,6 +56,7 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
       String projectDescription = _projectDescriptionController.text;
       DateTime currentTime = DateTime.now();
       String? title;
+      String? result;
 
       // Prepare the data to be sent to the remote URL
       Map<String, dynamic> projectData = {
@@ -66,14 +68,23 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
         'poster_email': _email,
       };
 
-      // Send the project data to the remote URL
-      String result = await sendProjectData(projectData);
-
-      if (result.startsWith('Project inserted successfully.')) {
-        title = 'Success';
-      } else {
-        title = 'Error';
+      try {
+        result = await sendProjectData(projectData);
+        if (result.startsWith('Project inserted successfully.')) {
+          title = 'Success';
+        } else {
+          title = 'Error';
+        }
+      } catch (error) {
+        if (error is SendDataException) {
+          title = 'Error';
+          result = error.message;
+        } else {
+          title = 'Error';
+          result = error.toString();
+        }
       }
+      
 
       // Show a dialog to indicate that the project has been published
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -82,7 +93,7 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: Text(title!),
-            content: Text(result),
+            content: Text(result!),
             actions: <Widget>[
               TextButton(
                 child: const Text('OK'),

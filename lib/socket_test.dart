@@ -1,9 +1,40 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
+
+// Custom exception for network data transfer
+class SendDataException implements Exception {
+  final String message;
+
+  SendDataException(this.message);
+}
 
 class DataSender {
-  Future<Map<String, dynamic>> sendNewMessage(Map<String, dynamic> message) async {
+  Future<void> sendMessageData(Map<String, dynamic> messageData) async {
+  String url = 'http://collabio.denniscode.tech/message';
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      body: jsonEncode(messageData),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    
+    dynamic responseData = jsonDecode(response.body);
+      
+    final result = responseData['result'];
+    print(result);
+    
+  } catch (e) {
+    throw SendDataException ('Send Message. ${e.toString()}');
+  }
+}
+
+
+/*  Future<void> sendNewMessage(Map<String, dynamic> message) async {
+    try {
     const url = 'http://collabio.denniscode.tech/message';
     final response = await http.post(
       Uri.parse(url),
@@ -11,9 +42,33 @@ class DataSender {
       body: jsonEncode(message),
     );
 
-    return jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      dynamic responseData = jsonDecode(response.body);
+      final messageValue = responseData['message'];
+      //print(messageValue);
+      if (isJSON(messageValue)) {
+        print (messageValue);
+      } else {
+        throw Exception ('Failed to send message. $messageValue');
+      }
+    } else {
+        throw Exception ('Failed to send message. Error code: ${response.statusCode}');
+    }
+
+    } catch (e) {
+        throw Exception ('Error sending message. $e');
   }
 
+  }*/
+
+  bool isJSON(String data) {
+  try {
+    json.decode(data);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
   Future<Map<String, dynamic>> createNewProject(Map<String, dynamic> project) async {
     const url = 'http://collabio.denniscode.tech/project';
     final response = await http.post(
@@ -24,6 +79,35 @@ class DataSender {
 
     return jsonDecode(response.body);
   }
+
+
+/*Future<void> sendMessageData(Map<String, dynamic> messageData) async {
+  String url = 'http://collabio.denniscode.tech/message';
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      body: jsonEncode(messageData),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      dynamic responseData = jsonDecode(response.body);
+      //final message = responseData['message'];
+      print(responseData);
+    }
+      /*if (message is Map<String, dynamic>) {
+        return message;
+      } else {
+        throw Exception(message);
+      }
+    } else {
+      throw Exception('$response');
+    }*/
+  } catch (e) {
+    throw Exception ('$e');
+  }
+}*/
 }
 
 void main() async {
@@ -31,6 +115,7 @@ void main() async {
   
   // Simulate sending a new message to the Flask /message route
   final message = {
+    "message_id": const Uuid().v4(),
     "sender_name": "Kunle",
     "sender_email": "kunleajayi@gmail.com",
     "receiver_name": "Dennis",
@@ -110,9 +195,18 @@ If you are interested in contributing to this app and helping people achieve the
     'poster_email': 'olasmith@gmail.com'
 };*/
 
-  final messageResponse = await dataSender.sendNewMessage(message);
-  print('Message response: $messageResponse');
-
+  //await dataSender.sendNewMessage(message);
+  try {
+  await dataSender.sendMessageData(message);
+  //print(result);
+  } catch (error) {
+    if (error is SendDataException) {
+      print(error.message);
+    } else {
+      print(error.toString());
+    }
+  }
+  
   /*final projectResponse = await dataSender.createNewProject(project1);
   print('Project response: $projectResponse');*/
 }

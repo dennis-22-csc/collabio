@@ -25,3 +25,16 @@ class SocketException implements Exception {
 
   SocketException(this.message);
 }
+
+// Custom exception for network data transfer
+class SendDataException implements Exception {
+  final String message;
+
+  SendDataException(this.message);
+}
+
+class LocalInsertException implements Exception {
+  final String message;
+
+  LocalInsertException(this.message);
+}

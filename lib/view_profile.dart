@@ -26,9 +26,9 @@ class ProfileSectionView extends StatefulWidget {
     this.selectProfilePicture,
     this.profilePicture,
   }) : super(key: key);
-
   @override
   State<ProfileSectionView> createState() => _ProfileSectionViewState();
+
 }
 
 class _ProfileSectionViewState extends State<ProfileSectionView> {

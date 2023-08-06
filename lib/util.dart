@@ -1,5 +1,16 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
+class Util {
+  static bool isJSON(String data) {
+  try {
+    json.decode(data);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+}
 class SharedPreferencesUtil {
   static Future<void> setLoggedOut(bool isLoggedOut) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();

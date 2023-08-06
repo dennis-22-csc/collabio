@@ -22,7 +22,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
   int _currentIndex = 0;
   File? profilePicture;
   final TextEditingController _searchController = TextEditingController();
-  FocusNode _searchFocusNode = FocusNode();
+  final FocusNode _searchFocusNode = FocusNode();
 
   ProjectsModel? projectsModel;
     
@@ -237,6 +237,5 @@ class _MyProjectPageState extends State<MyProjectPage> {
       ),
     ];
   }
-
 
 }

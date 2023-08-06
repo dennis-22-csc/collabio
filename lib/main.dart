@@ -87,6 +87,7 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> fetchApiData() async {
     try {
+      
       // Fetch projects and messages concurrently
       final projects = await fetchProjectsFromApi();
       final messages = await fetchMessagesFromApi("denniskoko@gmail.com");
@@ -111,7 +112,7 @@ class _MyAppState extends State<MyApp> {
         messagesModel.updateGroupedMessages("denniskoko@gmail.com");
 
         //Set up web socket for new messages
-        await connectToSocket(context, "denniskoko@gmail.com");
+        await connectToSocket(messagesModel, "denniskoko@gmail.com");
       });
 
       setState(() {
