@@ -196,7 +196,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const InboxScreen(currentUserEmail: 'denniskoko@gmail.com'),
+                  builder: (context) => const InboxScreen(currentUserEmail: 'denniskoko@gmail.com', currentUserName: 'Dennis'),
                 ),
               );
             }

@@ -4,9 +4,10 @@ import 'package:collabio/chat_screen.dart';
 import 'package:provider/provider.dart';
 
 class InboxScreen extends StatefulWidget {
+  final String currentUserName;
   final String currentUserEmail;
 
-  const InboxScreen({Key? key, required this.currentUserEmail}) : super(key: key);
+  const InboxScreen({Key? key, required this.currentUserName, required this.currentUserEmail}) : super(key: key);
 
   @override
   State<InboxScreen> createState() => _InboxScreenState();
@@ -17,7 +18,7 @@ class _InboxScreenState extends State<InboxScreen> {
   void initState() {
     super.initState();
     final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-    messagesModel.updateGroupedMessages("denniskoko@gmail.com");
+    messagesModel.updateGroupedMessages(widget.currentUserEmail);
   }
 
   @override
@@ -43,11 +44,22 @@ class _InboxScreenState extends State<InboxScreen> {
                   title: Text(groupKey),
                   subtitle: Text(mostRecentMessage.message),
                   onTap: () {
+                    String otherPartyName = "unknown";
+
+                    if (mostRecentMessage.senderName == widget.currentUserName) {
+                      // If the current user is the sender, then the other party is the receiver
+                      otherPartyName = mostRecentMessage.receiverName;
+                    } else if (mostRecentMessage.receiverName == widget.currentUserName) {
+                      // If the current user is the receiver, then the other party is the sender
+                      otherPartyName = mostRecentMessage.senderName;
+                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ChatScreen(
+                          currentUserName: widget.currentUserName,
                           currentUserEmail: widget.currentUserEmail,
+                          otherPartyName: otherPartyName,
                           otherPartyEmail: groupKey,
                         ),
                       ),
