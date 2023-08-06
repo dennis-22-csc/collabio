@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:collabio/model.dart';
-import 'package:collabio/exceptions.dart';
+//import 'package:collabio/exceptions.dart';
 import 'package:collabio/network_handler.dart';
-import 'package:collabio/database.dart';
+//import 'package:collabio/database.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+//import 'package:fluttertoast/fluttertoast.dart';
 
 class ChatScreen extends StatelessWidget {
   final String currentUserName;
@@ -29,7 +29,7 @@ class ChatScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(otherPartyEmail),
+        title: Text(otherPartyName),
       ),
       body: Column(
         children: [
@@ -85,7 +85,13 @@ class ChatScreen extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: textController,
-              decoration: const InputDecoration.collapsed(hintText: 'Enter new message'),
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                hintText: 'Enter new message',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(40.0),
+                ),
+              ),
             ),
           ),
           IconButton(
