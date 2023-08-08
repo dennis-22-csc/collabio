@@ -96,16 +96,16 @@ class _MyAppState extends State<MyApp> {
       await DatabaseHelper.insertProjects(projects);
 
       // Insert messages into the database
-      final insertedIds = await DatabaseHelper.insertMessages(messages);
+      await DatabaseHelper.insertMessages(messages);
 
       // Check for any failed UUIDs in shared preferences
-      final failedUuids = await SharedPreferencesUtil.fetchFailedIdsFromSharedPrefs();
+      //final failedUuids = await SharedPreferencesUtil.fetchFailedIdsFromSharedPrefs();
 
       // Include the failed UUIDs along with the newly inserted UUIDs
-      final allUuids = [...insertedIds, ...failedUuids];
+      //final allUuids = [...insertedIds, ...failedUuids];
 
       // Call the /del-messages API with all UUIDs (both inserted and failed)
-      await deleteMessages(allUuids);
+      //await deleteMessages(allUuids);
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         //Get initial messages from local database
         final messagesModel = Provider.of<MessagesModel>(context, listen: false);

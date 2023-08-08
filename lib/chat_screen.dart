@@ -3,6 +3,7 @@ import 'package:collabio/model.dart';
 //import 'package:collabio/exceptions.dart';
 import 'package:collabio/network_handler.dart';
 //import 'package:collabio/database.dart';
+import 'package:collabio/util.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
@@ -40,30 +41,56 @@ class ChatScreen extends StatelessWidget {
                 final message = messages[index];
                 final isCurrentUserMessage = message.senderEmail == currentUserEmail;
 
-                return Row(
-                  mainAxisAlignment: isCurrentUserMessage
-                      ? MainAxisAlignment.end
-                      : MainAxisAlignment.start,
+                bool showDateSeparator = index == 0 ||
+                    !Util.isSameDay(
+                      messages[index - 1].timestamp,
+                      message.timestamp,
+                    );
+
+                return Column(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                      constraints: const BoxConstraints(maxWidth: 250),
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(message.timestamp),
-                              const SizedBox(height: 8.0),
-                              Text(
-                                message.message,
-                                style: const TextStyle(fontSize: 16.0),
-                              ),
-                            ],
-                          ),
+                    if (showDateSeparator)
+                      _buildDateSeparator(message.timestamp),
+                    Row(
+                      mainAxisAlignment: isCurrentUserMessage
+                          ? MainAxisAlignment.end
+                          : MainAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0, vertical: 4.0),
+                          constraints: const BoxConstraints(maxWidth: 250),
+                          child: Card (
+                            child: Row (
+                              children: [
+                                Expanded(
+                                child: Padding (
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column (
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        message.message,
+                                        style: const TextStyle(fontSize: 16),
+                                      ),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: Text(
+                                          Util.formatTime(context, message.timestamp),
+                                          style: const TextStyle(fontSize: 12, color: Colors.grey)
+                                          )
+                                        )
+                                    ],
+                                  )
+                                )
+                                )
+                              ],
+                            ) 
+                          )
+
+
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 );
@@ -76,6 +103,43 @@ class ChatScreen extends StatelessWidget {
     );
   }
 
+
+  Widget _buildDateSeparator(String timestamp) {
+  final DateTime messageTime = DateTime.parse(timestamp);
+  final DateTime now = DateTime.now();
+  final DateTime today = DateTime(now.year, now.month, now.day);
+  final DateTime yesterday = today.subtract(const Duration(days: 1));
+  final DateFormat dayFormatter = DateFormat('EEEE'); // Format for day name
+  final DateFormat monthDayFormatter = DateFormat('MMMM d'); // Format for month and day
+  final DateFormat yearMonthDayFormatter = DateFormat('d MMMM y'); // Format for day, month, and year
+  String separatorText = '';
+
+  if (messageTime.isAfter(today)) {
+    separatorText = 'Today';
+  } else if (messageTime.isAfter(yesterday)) {
+    separatorText = 'Yesterday';
+  } else if (messageTime.isBefore(yesterday.subtract(const Duration(days: 7)))) {
+    separatorText = yearMonthDayFormatter.format(messageTime);
+  } else {
+    separatorText = messageTime.isBefore(today.subtract(const Duration(days: 7)))
+        ? monthDayFormatter.format(messageTime)
+        : dayFormatter.format(messageTime);
+  }
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8.0),
+    child: Center(
+      child: Text(
+        separatorText,
+        style: const TextStyle(
+          color: Colors.grey,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+  );
+}
+  
   Widget _buildMessageComposer(BuildContext context) {
     final TextEditingController textController = TextEditingController();
     return Container(
@@ -122,31 +186,11 @@ class ChatScreen extends StatelessWidget {
       
     try {
       await sendMessageData(messagesModel, message, currentUserEmail);
-      //showToast("Message sent successfully");
     } catch (error) {
-      /*if (error is LocalInsertException){
-        showToast("LocalInsertException. ${error.message}");
-      } else if (error is SendDataException){
-        await DatabaseHelper.deleteMessage(message['message_id']!);
-        showToast("SendDataException. ${error.message}");
-      } else {
-        showToast("Exception. ${error.toString()}");
-      }*/
-      
-    }
-
+      // Handle errors
     }
   }
 
-  /*void showToast(String message) {
-  Fluttertoast.showToast(
-    msg: message,
-    toastLength: Toast.LENGTH_SHORT,
-    gravity: ToastGravity.BOTTOM,
-    backgroundColor: Colors.black54,
-    textColor: Colors.white,
-    fontSize: 16.0,
-  );
-}*/
-
+  } 
+  
 }

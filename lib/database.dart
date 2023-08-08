@@ -224,31 +224,32 @@ static Future<List<Project>> getMatchingProjectsRecent(List<String> keywords, in
 }
 
 
-  // Function to retrieve all messages in groups based on the email address of the other party
   static Future<Map<String, List<Message>>> getGroupedMessages(String currentUserEmail) async {
-    final db = await _database;
-    final maps = await db.rawQuery('''
-      SELECT *,
-      CASE
-        WHEN $columnSenderEmail = ? THEN $columnReceiverEmail
-        ELSE $columnSenderEmail
-      END AS group_key
-      FROM $_messagesTable
-      WHERE $columnSenderEmail = ? OR $columnReceiverEmail = ?
-      ORDER BY group_key, $columnMessageTimestamp ASC
-    ''', [currentUserEmail, currentUserEmail, currentUserEmail]);
+  final db = await _database;
+  final maps = await db.rawQuery('''
+    SELECT *,
+    CASE
+      WHEN $columnSenderEmail = ? THEN $columnReceiverEmail
+      ELSE $columnSenderEmail
+    END AS group_key
+    FROM $_messagesTable
+    WHERE $columnSenderEmail = ? OR $columnReceiverEmail = ?
+    ORDER BY $columnMessageTimestamp ASC
+  ''', [currentUserEmail, currentUserEmail, currentUserEmail]);
 
-    final groupedMessages = <String, List<Message>>{};
-    for (final map in maps) {
-      final message = Message.fromMap(map);
-      final groupKey = map['group_key'] as String;
-      if (groupedMessages[groupKey] == null) {
-        groupedMessages[groupKey] = [];
-      }
-      groupedMessages[groupKey]!.add(message);
+  final groupedMessages = <String, List<Message>>{};
+  for (final map in maps) {
+    final message = Message.fromMap(map);
+    final groupKey = map['group_key'] as String;
+    if (groupedMessages[groupKey] == null) {
+      groupedMessages[groupKey] = [];
     }
-
-    return groupedMessages;
+    groupedMessages[groupKey]!.add(message);
   }
+
+  return groupedMessages;
+}
+
+
   
 }
