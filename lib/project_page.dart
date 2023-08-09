@@ -25,16 +25,23 @@ class _MyProjectPageState extends State<MyProjectPage> {
   final FocusNode _searchFocusNode = FocusNode();
 
   ProjectsModel? projectsModel;
-    
+  bool hasProfile = false;
+  
   @override
   void initState() {
     super.initState();
-    // Load the profile picture during initialization
+    getProfileStatus();
     loadProfilePicture();
     projectsModel = Provider.of<ProjectsModel>(context, listen: false);
     projectsModel!.updateProjectsForRefresh(["web development", "frontend"], 10);
   }
 
+  void getProfileStatus() async {
+    bool? myProfile = await SharedPreferencesUtil.hasProfile();
+    setState(() {
+      hasProfile = myProfile!;
+    });
+  }
   void loadProfilePicture() async {
     String? persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
 
@@ -60,23 +67,72 @@ class _MyProjectPageState extends State<MyProjectPage> {
     _searchFocusNode.unfocus();
   
   }
+
+
   @override
   Widget build(BuildContext context) {
+    var scaffoldKey = GlobalKey<ScaffoldState>();
+    
+    
+    List<Widget> drawerOptions = [
+      const UserAccountsDrawerHeader(
+        accountName: Text('Your Name'),
+        accountEmail: Text('your.email@example.com'),
+        currentAccountPicture: CircleAvatar(
+          backgroundColor: Colors.white,
+          child: Icon(Icons.person),
+        ),
+      ),
+    ];
+
+    if (hasProfile) {
+    drawerOptions.add(
+    ListTile(
+      title: const Text('View Profile'),
+      onTap: () {
+        Navigator.push(context,MaterialPageRoute(builder: (context) => const ProfileSectionScreen(),),);
+      },
+    ),
+  );
+} else {
+  drawerOptions.add(
+    ListTile(
+      title: const Text('Create Profile'),
+      onTap: () {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProfileScreen()),);
+      },
+    ),
+  );
+}
+
+drawerOptions.addAll([
+  ListTile(
+    title: const Text('Post Project'),
+    onTap: () {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProjectUploadScreen()),);                
+    },
+  ),
+  ListTile(
+    title: const Text('Log Out'),
+    onTap: () {
+      FirebaseAuth.instance.signOut();
+      SharedPreferencesUtil.setLoggedOut(true);
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()),);
+    },
+  ),
+]);
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        key: scaffoldKey,
         appBar: AppBar(
           title: Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ProfileSectionScreen(),
-                    ),
-                  );
+                  scaffoldKey.currentState!.openDrawer();
                 },
                 child: CircleAvatar(
                   radius: 20,
@@ -101,40 +157,22 @@ class _MyProjectPageState extends State<MyProjectPage> {
                   position: const RelativeRect.fromLTRB(1000.0, 80.0, 0.0, 0.0), // Adjust the position as needed
                   items: _buildOptionsMenu(context),
                 ).then((value) {
-                  if (value != null) {
-                    // Handle the selected menu item
-                    if (value == 'post_project') {
-                      // Handle 'Post project' menu item click
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const ProjectUploadScreen()),
-                        );
-                      });
-                    } else if (value == 'log_out') {
-                      // Handle 'Log out' menu item click
-                      FirebaseAuth.instance.signOut();
-                      SharedPreferencesUtil.setLoggedOut(true);
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
-                        );
-                      });
-                    } else if (value == 'create_profile') {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const ProfileScreen()),
-                        );
-                      });
-                    }
+                  if (value != null && value == 'refresh_project') {
+                   projectsModel!.updateProjectsForRefresh(["web development", "frontend"], 10);
                   }
                 });
               },
             ),
 
           ],
+          automaticallyImplyLeading: false,
+        ),
+        drawer: Drawer(
+            width: MediaQuery.of(context).size.width * 0.7,
+            child: ListView(
+            padding: EdgeInsets.zero,
+            children: drawerOptions,
+          ),
         ),
         body: Column(
           children: [
@@ -224,18 +262,11 @@ class _MyProjectPageState extends State<MyProjectPage> {
   List<PopupMenuEntry<String>> _buildOptionsMenu(BuildContext context) {
     return const <PopupMenuEntry<String>>[
       PopupMenuItem<String>(
-        value: 'post_project',
-        child: Text('Post Project'),
-      ),
-      PopupMenuItem<String>(
-        value: 'create_profile',
-        child: Text('Create Profile'),
-      ),
-      PopupMenuItem<String>(
-        value: 'log_out',
-        child: Text('Log out'),
+        value: 'refresh_project',
+        child: Text('Refresh'),
       ),
     ];
   }
 
+  
 }

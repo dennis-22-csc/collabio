@@ -41,11 +41,20 @@ static bool isSameDay(String timestamp1, String timestamp2) {
 }
 }
 class SharedPreferencesUtil {
+  static Future<void> setHasProfile(bool hasProfile) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasProfile', hasProfile);
+  }
+
   static Future<void> setLoggedOut(bool isLoggedOut) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedOut', isLoggedOut);
   }
 
+  static Future<bool?> hasProfile() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('hasProfile');
+  }
   static Future<bool> isLoggedOut() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getBool('isLoggedOut') ?? false;

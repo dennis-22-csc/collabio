@@ -67,7 +67,7 @@ class _InboxScreenState extends State<InboxScreen> {
   String firstLetter = otherPartyName.isNotEmpty ? otherPartyName[0].toUpperCase() : '';
     return ListTile(
   leading: CircleAvatar(
-    radius: 25,
+    radius: 20,
     backgroundColor: Colors.blue,
     child: Text(
       firstLetter,

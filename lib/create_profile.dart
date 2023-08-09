@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:collabio/project_page.dart';
+import 'package:collabio/util.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -89,7 +90,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         // Save profile picture to internal storage
         await Util.saveProfilePicture(_profilePicture!);
-
+        await SharedPreferencesUtil.setHasProfile(true);
         WidgetsBinding.instance.addPostFrameCallback((_) {
         showDialog(
           context: context,
