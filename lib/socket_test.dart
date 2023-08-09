@@ -24,11 +24,10 @@ class DataSender {
     
     dynamic responseData = jsonDecode(response.body);
       
-    final result = responseData['result'];
-    print(result);
+    print(responseData);
     
   } catch (e) {
-    throw SendDataException ('Send Message. ${e.toString()}');
+    throw SendDataException ('Send Message. $e');
   }
 }
 
@@ -116,13 +115,13 @@ void main() async {
   // Simulate sending a new message to the Flask /message route
   final message = {
     "message_id": const Uuid().v4(),
-    "sender_name": "Kunle",
-    "sender_email": "kunleajayi@gmail.com",
+    "sender_name": "Ola",
+    "sender_email": "olasmith@gmail.com",
     "receiver_name": "Dennis",
     "receiver_email": "denniskoko@gmail.com",
     "message": "How are you?",
     "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
-        .format(DateTime.now().subtract(const Duration(minutes: 60 * 4))),
+        .format(DateTime.now()),
   };
 
 /*final project1 = {

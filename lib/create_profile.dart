@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:collabio/project_page.dart';
 import 'package:collabio/util.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-
+import 'package:collabio/exceptions.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -41,7 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _selectProfilePicture() async {
-    bool directoryExists = await Util._checkAndCreateDirectory(context);
+    bool directoryExists = await Util.checkAndCreateDirectory(context);
 
     if (directoryExists) {
       // Permission granted, launch picker
@@ -81,13 +76,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           about: about,
           email: email!,
         );
-
         // Save data to shared preferences after successful remote save
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('firstName', firstName);
-        await prefs.setString('lastName', lastName);
-        await prefs.setString('about', about);
-
+        Map<String, dynamic> userInfo = {
+          'firstName': firstName,
+          'lastName': lastName,
+          'about': about,
+        };
+        await SharedPreferencesUtil.setUserInfo(userInfo);
+        
         // Save profile picture to internal storage
         await Util.saveProfilePicture(_profilePicture!);
         await SharedPreferencesUtil.setHasProfile(true);
@@ -114,8 +110,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
         });
       } catch (e) {
-        // Error occurred while saving profile information
-        showCustomDialog(context, 'Error', e.toString());
+        if (e is SendDataException) {
+          showCustomDialog(context, 'Error', e.message);
+        } else {
+          showCustomDialog(context, 'Error', e.toString());
+        }
       }
     } else {
       // Display an error message indicating required fields
@@ -228,112 +227,3 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-class Util {
-
-   static Future<void> saveProfileInformation({
-    required String firstName,
-    required String lastName,
-    required String about,
-    required String email,
-  }) async {
-    Map<String, dynamic> userData = {
-        'first_name': firstName,
-        'last_name': lastName,
-        'email': email,
-        'about': about,
-        
-      };
-
-    await sendUserData(userData);
-  }
-
-   static Future<bool> _requestPermission(Permission permission) async {
-    if (await permission.isGranted) {
-      return true;
-    } else {
-      var result = await permission.request();
-      if (result == PermissionStatus.granted) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-static Future<String> sendUserData(Map<String, dynamic> userData) async {
-  String url = 'https://collabio.denniscode.tech/users';
-
-  try {
-    final response = await http.post(
-      Uri.parse(url),
-      body: jsonEncode(userData),
-      headers: {'Content-Type': 'application/json'},
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      String message = responseData['message'];
-      return message;
-    } else {
-      return 'Failed to save user data. Error code: ${response.statusCode}';
-    }
-  } catch (e) {
-    return 'Error saving user data: $e';
-  }
-}
-
-   static Future<bool> saveProfilePicture(File profilePicture) async {
-     Directory? directory;
-
-     if (Platform.isAndroid) {
-       directory = await getExternalStorageDirectory();
-       if (directory != null) {
-         String newPath = "";
-
-         List<String> paths = directory.path.split("/");
-         for (int x = 1; x < paths.length; x++) {
-           String folder = paths[x];
-           if (folder != "Android") {
-             newPath += "/$folder";
-           } else {
-             break;
-           }
-         }
-         newPath = "$newPath/Collabio/profile_picture";
-         directory = Directory(newPath);
-       }
-     }
-
-     if (directory != null && !await directory.exists()) {
-       await directory.create(recursive: true);
-     }
-     if (directory != null && await directory.exists()) {
-       File saveFile = File("${directory.path}/${profilePicture.path.split('/').last}");
-       await profilePicture.copy(saveFile.path);
-       SharedPreferences prefs = await SharedPreferences.getInstance();
-       await prefs.setString('profile_picture', saveFile.path);
-
-       return true;
-     }
-
-     return false;
-   }
-
-
-   static Future<bool> _checkAndCreateDirectory(BuildContext context) async {
-     if (Platform.isAndroid) {
-       if (await _requestPermission(Permission.storage)) {
-         Directory? directory = await getExternalStorageDirectory();
-         if (directory != null) {
-           String newPath = "${directory.path}/Collabio/profile_picture";
-           directory = Directory(newPath);
-           if (!await directory.exists()) {
-             await directory.create(recursive: true);
-           }
-           return true; // Directory creation successful
-         }
-       }
-     }
-     return false; // Directory creation failed
-   }
-
-}

@@ -47,6 +47,7 @@ class _MyAppState extends State<MyApp> {
   String _errorMessage = "null";
   User? user;
   late ThemeData appTheme;
+  bool hasProfile = false;
 
   @override
   void initState() {
@@ -87,7 +88,14 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> fetchApiData() async {
     try {
-      
+      bool myProfile = await SharedPreferencesUtil.hasProfile();
+      setState(() {
+        hasProfile = myProfile;
+      });
+      if (hasProfile) {
+        final userInfo = await fetchUserInfoFromApi("denniskoko@gmail.com");
+        await SharedPreferencesUtil.setUserInfo(userInfo);
+      }
       // Fetch projects and messages concurrently
       final projects = await fetchProjectsFromApi();
       final messages = await fetchMessagesFromApi("denniskoko@gmail.com");
@@ -124,6 +132,8 @@ class _MyAppState extends State<MyApp> {
       if (error is FetchProjectsException) {
         _errorMessage = error.message;
       } else if (error is FetchMessagesException) {
+          _errorMessage = error.message;
+      } else if (error is FetchUserException) {
           _errorMessage = error.message;
       } else if (error is DeleteMessagesException) {
           _errorMessage = error.message;

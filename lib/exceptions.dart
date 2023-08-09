@@ -38,3 +38,9 @@ class LocalInsertException implements Exception {
 
   LocalInsertException(this.message);
 }
+
+class FetchUserException implements Exception {
+  final String message;
+
+  FetchUserException(this.message);
+}

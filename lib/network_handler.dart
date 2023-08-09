@@ -6,61 +6,112 @@ import 'package:collabio/util.dart';
 import 'package:collabio/exceptions.dart';
 import 'package:collabio/database.dart';
 
-Future<List<Project>> fetchProjectsFromApi() async {
-    
-    try{
-      final url = Uri.parse('http://collabio.denniscode.tech/projects');
-      final response = await http.get(url);
-      
-      final jsonData = jsonDecode(response.body);
-      
-      return jsonData.map<Project>((item) {
-          return Project.fromMap(item);
-      }).toList();
-      
-    } catch (error) {
-      throw FetchProjectsException('Projects. $error');
+Future<Map<String, dynamic>> fetchUserInfoFromApi(String email) async {
+  try {
+    final url = Uri.parse('http://collabio.denniscode.tech/get-user');
+    final headers = {'Content-Type': 'application/json'};
+    final body = jsonEncode({'email': email});
+
+    final response = await http.post(url, headers: headers, body: body);
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final jsonData = jsonDecode(responseBody);
+        return Util.convertJsonToUserInfo(jsonData);
+      } else {
+        throw FetchUserException(responseBody);
+      }
+    } else {
+      throw FetchUserException('HTTP Error: ${response.statusCode}');
     }
-    
+  } catch (error) {
+    throw FetchUserException('User. $error');
+  }
+}
+
+Future<List<Project>> fetchProjectsFromApi() async {
+  try {
+    final url = Uri.parse('http://collabio.denniscode.tech/projects');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final jsonData = jsonDecode(responseBody);
+        return jsonData.map<Project>((item) {
+          return Project.fromMap(item);
+        }).toList();
+      } else {
+        throw FetchProjectsException(responseBody);
+      }
+    } else {
+      throw FetchProjectsException('HTTP Error: ${response.statusCode}');
+    }
+  } catch (error) {
+    throw FetchProjectsException('Projects. $error');
+  }
 }
 
 Future<List<Message>> fetchMessagesFromApi(String email) async {
-  
   try {
-  // Fetch messages from the API
-  final url = Uri.parse('http://collabio.denniscode.tech/messages');
-  final headers = {'Content-Type': 'application/json'};
-  final body = jsonEncode({'email': email});
+    final url = Uri.parse('http://collabio.denniscode.tech/messages');
+    final headers = {'Content-Type': 'application/json'};
+    final body = jsonEncode({'email': email});
 
-  final response = await http.post(url, headers: headers, body: body);
+    final response = await http.post(url, headers: headers, body: body);
 
-  final jsonData = jsonDecode(response.body) ['status'] as List<dynamic>; 
-  return jsonData.map<Message>((item) {
-    return Message.fromMap(item);
-  }).toList();
-    
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final jsonData = jsonDecode(responseBody) as List<dynamic>;
+        return jsonData.map<Message>((item) {
+          return Message.fromMap(item);
+        }).toList();
+      } else {
+        throw FetchMessagesException(responseBody);
+      }
+    } else {
+      throw FetchMessagesException('HTTP Error: ${response.statusCode}');
+    }
   } catch (error) {
     throw FetchMessagesException('Messages. $error');
   }
-  
 }
 
 // Method to delete messages from the API using the inserted message ids
 Future<void> deleteMessages(List<String> messageIds) async {
-  try{
-  final url = Uri.parse('http://collabio.denniscode.tech/del-messages');
-  final headers = {'Content-Type': 'application/json'};
-  final body = jsonEncode({'uuids': messageIds});
+  try {
+    final url = Uri.parse('http://collabio.denniscode.tech/del-messages');
+    final headers = {'Content-Type': 'application/json'};
+    final body = jsonEncode({'uuids': messageIds});
 
-  final response = await http.post(url, headers: headers, body: body);
+    final response = await http.post(url, headers: headers, body: body);
 
-    final responseData = jsonDecode(response.body);
-    if (responseData.containsKey('failed_uuids')) {
-      final failedUuids = (responseData['failed_uuids'] as List<dynamic>).cast<String>();
-      await SharedPreferencesUtil.storeFailedMessageUuids(failedUuids);
-    } 
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final responseData = jsonDecode(responseBody);
+        if (responseData.containsKey('failed_uuids')) {
+          final failedUuids = (responseData['failed_uuids'] as List<dynamic>).cast<String>();
+          await SharedPreferencesUtil.storeFailedMessageUuids(failedUuids);
+        }
+      } else {
+        throw DeleteMessagesException(responseBody);
+      }
+    } else {
+      throw DeleteMessagesException('HTTP Error: ${response.statusCode}');
+    }
   } catch (error) {
-    throw DeleteMessagesException ('Delete Messages. $error');
+    throw DeleteMessagesException('Delete Messages. $error');
   }
 }
 
@@ -74,10 +125,20 @@ Future<String> sendProjectData(Map<String, dynamic> projectData) async {
       headers: {'Content-Type': 'application/json'},
     );
 
-    final responseData = jsonDecode(response.body);
-    return responseData['message']; 
-  } catch (e) {
-    throw SendDataException('Post Project. $e');
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        return jsonDecode(responseBody);
+      } else {
+        throw SendDataException(responseBody);
+      }
+    } else {
+      throw SendDataException('HTTP Error: ${response.statusCode}');
+    }
+  } catch (error) {
+    throw SendDataException('Post Project. $error');
   }
 }
 
@@ -86,31 +147,67 @@ Future<void> sendMessageData(MessagesModel messagesModel, Map<String, dynamic> m
 
   try {
     await DatabaseHelper.insertMessage(messageData);
-  } catch (e) {
-    throw LocalInsertException ('Send Message Local. $e');
+  } catch (error) {
+    throw LocalInsertException('Send Message Local. $error');
   }
+
   try {
     final response = await http.post(
-    Uri.parse(url),
-    body: jsonEncode(messageData),
-    headers: {'Content-Type': 'application/json'},
+      Uri.parse(url),
+      body: jsonEncode(messageData),
+      headers: {'Content-Type': 'application/json'},
     );
 
-    dynamic responseData = jsonDecode(response.body);
-    final result = responseData['result'];
-    if (result == "Message inserted successfully.") {
-      messagesModel.updateGroupedMessages(currentUserEmail);
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final responseData = jsonDecode(responseBody);
+        if (responseData == "Message inserted successfully.") {
+          messagesModel.updateGroupedMessages(currentUserEmail);
+        } else {
+          throw SendDataException('Send Message Internal $responseData');
+        }
+      } else {
+        throw SendDataException(responseBody);
+      }
     } else {
-      throw SendDataException ('Send Message Internal $result');
+      throw SendDataException('HTTP Error: ${response.statusCode}');
     }
-    
-  } catch (e) {
-    throw SendDataException ('Send Message External. $e');
+  } catch (error) {
+    throw SendDataException('Send Message External. $error');
   }
-    
-  
 }
 
+Future<void> sendUserData(Map<String, dynamic> userData) async {
+  String url = 'http://collabio.denniscode.tech/create-user';
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      body: jsonEncode(userData),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final responseData = jsonDecode(responseBody);
+        if (responseData != "User inserted successfully.") {
+          throw SendDataException(responseData);
+        }
+      }
+      
+    } else {
+      throw SendDataException('Failed to save user data. Error code: ${response.statusCode}');
+    }
+  } catch (error) {
+    throw SendDataException('Error saving user data: $error');
+  }
+}
 
 Future<void> connectToSocket(MessagesModel messagesModel, String currentUserEmail) async {
     IO.Socket? socket;

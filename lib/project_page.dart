@@ -26,20 +26,23 @@ class _MyProjectPageState extends State<MyProjectPage> {
 
   ProjectsModel? projectsModel;
   bool hasProfile = false;
+  String? name;
+  
   
   @override
   void initState() {
     super.initState();
     getProfileStatus();
     loadProfilePicture();
+    loadProfileContent();
     projectsModel = Provider.of<ProjectsModel>(context, listen: false);
     projectsModel!.updateProjectsForRefresh(["web development", "frontend"], 10);
   }
 
   void getProfileStatus() async {
-    bool? myProfile = await SharedPreferencesUtil.hasProfile();
+    bool myProfile = await SharedPreferencesUtil.hasProfile();
     setState(() {
-      hasProfile = myProfile!;
+      hasProfile = myProfile;
     });
   }
   void loadProfilePicture() async {
@@ -68,45 +71,53 @@ class _MyProjectPageState extends State<MyProjectPage> {
   
   }
 
+  void loadProfileContent() async {
+    String fName = (await SharedPreferencesUtil.getFirstName()) ?? '';
+    String lName = (await SharedPreferencesUtil.getLastName()) ?? '';
+    setState(() {
+      name = '$fName $lName';
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
     var scaffoldKey = GlobalKey<ScaffoldState>();
-    
-    
     List<Widget> drawerOptions = [
-      const UserAccountsDrawerHeader(
-        accountName: Text('Your Name'),
-        accountEmail: Text('your.email@example.com'),
-        currentAccountPicture: CircleAvatar(
-          backgroundColor: Colors.white,
-          child: Icon(Icons.person),
-        ),
+  if (hasProfile)
+    UserAccountsDrawerHeader(
+      accountName: Text(name!),
+      accountEmail: const Text('denniskoko@gmail.com'),
+      currentAccountPicture: CircleAvatar(
+        backgroundColor: Colors.white,
+        backgroundImage: profilePicture != null ? FileImage(profilePicture!) : null,
+        child: profilePicture == null ? const Icon(Icons.person) : null,
       ),
-    ];
-
-    if (hasProfile) {
-    drawerOptions.add(
+    )
+  else
+    Container(height: 160),
+  
+  if (hasProfile)
     ListTile(
       title: const Text('View Profile'),
       onTap: () {
-        Navigator.push(context,MaterialPageRoute(builder: (context) => const ProfileSectionScreen(),),);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileSectionScreen()),
+        );
       },
-    ),
-  );
-} else {
-  drawerOptions.add(
+    )
+  else
     ListTile(
       title: const Text('Create Profile'),
       onTap: () {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProfileScreen()),);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+        );
       },
     ),
-  );
-}
-
-drawerOptions.addAll([
-  ListTile(
+    ListTile(
     title: const Text('Post Project'),
     onTap: () {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProjectUploadScreen()),);                
@@ -120,7 +131,7 @@ drawerOptions.addAll([
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()),);
     },
   ),
-]);
+];
 
     return DefaultTabController(
       length: 2,
@@ -137,6 +148,7 @@ drawerOptions.addAll([
                 child: CircleAvatar(
                   radius: 20,
                   backgroundImage: profilePicture != null ? FileImage(profilePicture!) : null,
+                  child: profilePicture == null ? const Icon(Icons.person) : null,
                 ),
               ),
               const SizedBox(width: 8.0),
