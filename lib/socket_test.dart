@@ -3,20 +3,9 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
-// Custom exception for network data transfer
-class SendDataException implements Exception {
-  final String message;
-
-  SendDataException(this.message);
-}
-class FetchUserException implements Exception {
-  final String message;
-
-  FetchUserException(this.message);
-}
-
 class DataSender {
-  Future<void> sendMessageData(Map<String, dynamic> messageData) async {
+  Future<String> sendMessageData(Map<String, dynamic> messageData) async {
+    late String msg;
   String url = 'http://collabio.denniscode.tech/message';
 
   try {
@@ -29,50 +18,14 @@ class DataSender {
     
     dynamic responseData = jsonDecode(response.body);
       
-    print(responseData);
+    msg = responseData;
     
   } catch (e) {
-    throw SendDataException ('Send Message. $e');
+    msg = 'Send Message. $e';
   }
+  return msg;
 }
 
-
-/*  Future<void> sendNewMessage(Map<String, dynamic> message) async {
-    try {
-    const url = 'http://collabio.denniscode.tech/message';
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(message),
-    );
-
-    if (response.statusCode == 200) {
-      dynamic responseData = jsonDecode(response.body);
-      final messageValue = responseData['message'];
-      //print(messageValue);
-      if (isJSON(messageValue)) {
-        print (messageValue);
-      } else {
-        throw Exception ('Failed to send message. $messageValue');
-      }
-    } else {
-        throw Exception ('Failed to send message. Error code: ${response.statusCode}');
-    }
-
-    } catch (e) {
-        throw Exception ('Error sending message. $e');
-  }
-
-  }*/
-
-  bool isJSON(String data) {
-  try {
-    json.decode(data);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
   Future<dynamic> createNewProject(Map<String, dynamic> project) async {
     const url = 'http://collabio.denniscode.tech/project';
     final response = await http.post(
@@ -84,124 +37,6 @@ class DataSender {
     return jsonDecode(response.body);
   }
 
-Future<dynamic> fetchUserInfoFromApi(String email) async {
-  try {
-    final url = Uri.parse('http://collabio.denniscode.tech/get-user');
-    final headers = {'Content-Type': 'application/json'};
-    final body = jsonEncode({'email': email});
-
-    final response = await http.post(url, headers: headers, body: body);
-
-    if (response.statusCode == 200) {
-      final contentType = response.headers['content-type'];
-      final responseBody = response.body;
-
-      if (contentType?.contains('application/json') == true) {
-        final jsonData = jsonDecode(responseBody);
-        return convertJsonToUserInfo(jsonData);
-      } else {
-        throw FetchUserException(responseBody);
-      }
-    } else {
-      throw FetchUserException('HTTP Error: ${response.statusCode}');
-    }
-  } catch (error) {
-    throw FetchUserException('User. $error');
-  }
-}
-
-static Map<String, dynamic> convertJsonToUserInfo(Map<String, dynamic> jsonData) {
-  List<String> tagsList = List<String>.from(jsonData['tags']);
-
-  return {
-    'firstName': jsonData['first_name'],
-    'lastName': jsonData['last_name'],
-    'about': jsonData['about'],
-    'tags': tagsList,
-  };
-}
-
-
-Future<String> updateProfileSection(String email, String title, dynamic content) async {
-  late String msg;
-  
-  const String url = 'http://collabio.denniscode.tech/update_profile';
-  final Map<String, dynamic> data = {
-    'email': email,
-  };
-  // Assign the specific content to the corresponding field based on the 'title'
-  switch (title) {
-    case 'First Name':
-      data['first_name'] = content;
-      break;
-    case 'Last Name':
-      data['last_name'] = content;
-      break;
-    case 'About':
-      data['about'] = content;
-    case 'Skills':
-      data['tags'] = content;
-    default:
-      break;
-  }
-
-  try {
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
-    );
-
-    if (response.statusCode == 200) {
-      final contentType = response.headers['content-type'];
-      final responseBody = response.body;
-
-      if (contentType?.contains('application/json') == true) {
-        final responseData = jsonDecode(responseBody);
-        if (responseData == "Profile updated successfully") {
-          msg = "Profile updated successfully";
-        } else {
-          msg = responseData;
-        }
-      } 
-    } else {
-      final responseText = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
-      msg = 'Failed to update profile section "$title". $responseText';
-    }
-  } catch (e) {
-    msg = 'Error occurred while updating profile section "$title". $e';
-  }
-  return msg;
-}
-
-
-/*Future<void> sendMessageData(Map<String, dynamic> messageData) async {
-  String url = 'http://collabio.denniscode.tech/message';
-
-  try {
-    final response = await http.post(
-      Uri.parse(url),
-      body: jsonEncode(messageData),
-      headers: {'Content-Type': 'application/json'},
-    );
-
-    if (response.statusCode == 200) {
-      dynamic responseData = jsonDecode(response.body);
-      //final message = responseData['message'];
-      print(responseData);
-    }
-      /*if (message is Map<String, dynamic>) {
-        return message;
-      } else {
-        throw Exception(message);
-      }
-    } else {
-      throw Exception('$response');
-    }*/
-  } catch (e) {
-    throw Exception ('$e');
-  }
-}*/
 }
 
 void main() async {
@@ -222,7 +57,7 @@ void main() async {
 final project1 = {
     'title': 'Build a Social Networking Platform',
     'timestamp': DateFormat('yyyy-MM-dd HH:mm:ss')
-        .format(DateTime.now().subtract(const Duration(minutes: 60 * 4))),
+        .format(DateTime.now()),
     'description': '''
 I am seeking a team of developers to collaborate with me on building a social networking platform similar to Facebook and Twitter.
 
@@ -242,9 +77,9 @@ If you are interested in joining this exciting project, please get in touch with
 };
 
 final project2 = {
-    'title': 'Create an Online Course Platform',
+    'title': 'Build Online Course Platform',
     'timestamp': DateFormat('yyyy-MM-dd HH:mm:ss')
-        .format(DateTime.now().subtract(const Duration(minutes: 60 * 4))),
+        .format(DateTime.now()),
     'description': '''
 I am looking for developers and educators to collaborate on building an online course platform like Udemy or Coursera.
 
@@ -268,7 +103,7 @@ If you are passionate about education and technology, please reach out to me to 
 final project3 = {
     'title': 'Build a Personal Finance Mobile App',
     'timestamp': DateFormat('yyyy-MM-dd HH:mm:ss')
-        .format(DateTime.now().subtract(const Duration(minutes: 60 * 4))),
+        .format(DateTime.now()),
     'description': '''
 I am searching for a skilled mobile app developer to collaborate on creating a personal finance app for both iOS and Android platforms.
 
@@ -289,24 +124,13 @@ If you are interested in contributing to this app and helping people achieve the
     'poster_email': 'olasmith@gmail.com'
 };
 
-  //await dataSender.sendNewMessage(message);
-  /*try {
-  await dataSender.sendMessageData(message);
-  //print(result);
-  } catch (error) {
-    if (error is SendDataException) {
-      print(error.message);
-    } else {
-      print(error.toString());
-    }
-  }*/
   
-  /*final projectResponse = await dataSender.createNewProject(project3);
-  print('Project response: $projectResponse');*/
+ //final messageResponse = await dataSender.sendMessageData(message);
+ //print(messageResponse);
+  
+  final projectResponse = await dataSender.createNewProject(project1);
+  print('Project response: $projectResponse');
 
   //final userResponse = await dataSender.fetchUserInfoFromApi("denniskoko@gmail.com");
   //print('User Response: $userResponse');
-  
-  final updateResponse = await dataSender.updateProfileSection("dennisthebusinessguru@gmail.com", "Skills", ["fav"]);
-  print(updateResponse);
 }

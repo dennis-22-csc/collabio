@@ -122,7 +122,7 @@ Future<dynamic> fetchMessagesFromApi(String email) async {
 
 Future<String> sendProjectData(Map<String, dynamic> projectData) async {
   late String msg;
-  String url = 'http://collabio.denniscode.tech/projects';
+  String url = 'http://collabio.denniscode.tech/project';
 
   try {
     final response = await http.post(
@@ -278,7 +278,6 @@ Future<String> connectToSocket(MessagesModel messagesModel, String currentUserEm
     late String msg;
     IO.Socket? socket;
     Set<String> receivedMessageIds = {};
-    Set<String> receivedProjectIds = {};
 
     try {
       socket = IO.io('http://collabio.denniscode.tech', <String, dynamic>{
@@ -296,15 +295,6 @@ Future<String> connectToSocket(MessagesModel messagesModel, String currentUserEm
           messagesModel.updateGroupedMessages(currentUserEmail);
           receivedMessageIds.add(messageId);
           //deleteMessages(messageIds);
-        }
-      });
-
-      socket.on('new_project', (data) {
-        final project = jsonDecode(data);
-        final projectId = project['project_id'];
-        if (!receivedProjectIds.contains(projectId)) {
-          DatabaseHelper.insertProject(project);
-          receivedProjectIds.add(projectId);
         }
       });
 

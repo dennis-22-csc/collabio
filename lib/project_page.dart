@@ -117,12 +117,6 @@ class _MyProjectPageState extends State<MyProjectPage> {
         );
       },
     ),
-    ListTile(
-    title: const Text('Post Project'),
-    onTap: () {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProjectUploadScreen()),);                
-    },
-  ),
   ListTile(
     title: const Text('Log Out'),
     onTap: () {
@@ -169,8 +163,8 @@ class _MyProjectPageState extends State<MyProjectPage> {
                   position: const RelativeRect.fromLTRB(1000.0, 80.0, 0.0, 0.0), // Adjust the position as needed
                   items: _buildOptionsMenu(context),
                 ).then((value) {
-                  if (value != null && value == 'refresh_project') {
-                   projectsModel!.updateProjectsForRefresh(["web development", "frontend"], 10);
+                  if (value != null && value == 'post_project') {
+                   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProjectUploadScreen()),);
                   }
                 });
               },
@@ -274,8 +268,8 @@ class _MyProjectPageState extends State<MyProjectPage> {
   List<PopupMenuEntry<String>> _buildOptionsMenu(BuildContext context) {
     return const <PopupMenuEntry<String>>[
       PopupMenuItem<String>(
-        value: 'refresh_project',
-        child: Text('Refresh'),
+        value: 'post_project',
+        child: Text('Post Project'),
       ),
     ];
   }

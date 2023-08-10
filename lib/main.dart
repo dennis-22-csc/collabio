@@ -84,28 +84,26 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+
   Future<void> fetchApiData() async {
-    
-      // Fetch projects and messages concurrently
+    try {
       final projectResult = await fetchProjectsFromApi();
       final messageResult = await fetchMessagesFromApi("denniskoko@gmail.com");
 
       if (projectResult is List<Project>) {
-        // Insert projects into the database
         await DatabaseHelper.insertProjects(projectResult);
       } else {
-        _errorOccurred = true;
-        _errorMessage = projectResult;
+        _showError(projectResult);
+        return;
       }
-      
+
       if (messageResult is List<Message>) {
-        // Insert messages into the database
         await DatabaseHelper.insertMessages(messageResult);
       } else {
-        _errorOccurred = true;
-        _errorMessage = projectResult;
+        _showError(messageResult);
+        return;
       }
-      
+
       // Check for any failed UUIDs in shared preferences
       //final failedUuids = await SharedPreferencesUtil.fetchFailedIdsFromSharedPrefs();
 
@@ -122,17 +120,27 @@ class _MyAppState extends State<MyApp> {
         //Set up web socket for new messages
         final socketResult = await connectToSocket(messagesModel, "denniskoko@gmail.com");
         if (socketResult != "Connection successful") {
-          _errorOccurred = true;
-          _errorMessage = socketResult;
+          _showError(socketResult);
+          return;
         }
       });
-
+      
       setState(() {
-        _errorOccurred = _errorOccurred;
-        _errorMessage = _errorMessage;
         _fetchCompleted = true;
       });
+    } catch (error) {
+      _showError("An error occurred: $error");
     }
+  }
+
+  void _showError(String errorMessage) {
+    setState(() {
+      _errorOccurred = true;
+      _errorMessage = errorMessage;
+      _fetchCompleted = true;
+    });
+  }
+
 
 
   @override
@@ -143,60 +151,57 @@ class _MyAppState extends State<MyApp> {
     );
 
     if (!_isFirebaseInitialized) {
-      return MaterialApp(
-        theme: appTheme,
-        home: Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(
-                  appTheme.colorScheme.onPrimary),
-              backgroundColor: appTheme.colorScheme.onBackground,
-            ),
-          ),
-        ),
-      );
+      return _buildLoadingIndicator();
     }
 
      if (!_fetchCompleted) {
-      return MaterialApp(
-        theme: appTheme,
-        home: Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(
-                  appTheme.colorScheme.onPrimary),
-              backgroundColor: appTheme.colorScheme.onBackground,
-            ),
-          ),
-        ),
-      );
+      return _buildLoadingIndicator();
     }
 
     if (_errorOccurred) {
-      return MaterialApp(
-        theme: appTheme,
-        home: Scaffold(
-          body: Center(
-            child: AlertDialog(
-              title: const Text('Error'),
-              content: Text(_errorMessage),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    exit(0); // Terminate the app
-                  },
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      return _buildErrorScreen();
     }
 
     return MaterialApp(
       theme: appTheme,
       home: buildReloadFutureBuilder(),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return MaterialApp(
+      theme: appTheme,
+      home: Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor:
+                AlwaysStoppedAnimation<Color>(appTheme.colorScheme.onPrimary),
+            backgroundColor: appTheme.colorScheme.onBackground,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorScreen() {
+    return MaterialApp(
+      theme: appTheme,
+      home: Scaffold(
+        body: Center(
+          child: AlertDialog(
+            title: const Text('Error'),
+            content: Text(_errorMessage),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  exit(0); // Terminate the app
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

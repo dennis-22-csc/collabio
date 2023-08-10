@@ -2,6 +2,7 @@ import 'package:collabio/util.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:collabio/network_handler.dart';
+import 'package:collabio/project_page.dart';
 
 class ProjectUploadScreen extends StatefulWidget {
   const ProjectUploadScreen({Key? key}) : super(key: key);
@@ -87,7 +88,7 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
               TextButton(
                 child: const Text('OK'),
                 onPressed: () {
-                  Navigator.of(context).pop();
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MyProjectPage(), ), );
                 },
               ),
             ],
@@ -102,6 +103,12 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MyProjectPage(), ), );
+            },
+          ),
         title: const Text('Publish Project'),
       ),
       body: Padding(
