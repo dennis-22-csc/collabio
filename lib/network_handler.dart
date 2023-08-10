@@ -6,7 +6,7 @@ import 'package:collabio/util.dart';
 import 'package:collabio/exceptions.dart';
 import 'package:collabio/database.dart';
 
-Future<Map<String, dynamic>> fetchUserInfoFromApi(String email) async {
+/*Future<Map<String, dynamic>> fetchUserInfoFromApi(String email) async {
   try {
     final url = Uri.parse('http://collabio.denniscode.tech/get-user');
     final headers = {'Content-Type': 'application/json'};
@@ -30,7 +30,7 @@ Future<Map<String, dynamic>> fetchUserInfoFromApi(String email) async {
   } catch (error) {
     throw FetchUserException('User. $error');
   }
-}
+}*/
 
 Future<List<Project>> fetchProjectsFromApi() async {
   try {
@@ -207,6 +207,58 @@ Future<void> sendUserData(Map<String, dynamic> userData) async {
   } catch (error) {
     throw SendDataException('Error saving user data: $error');
   }
+}
+
+Future<String> updateProfileSection(String email, String title, dynamic content) async {
+  late String msg;
+  const String url = 'http://collabio.denniscode.tech/update_profile';
+  final Map<String, dynamic> data = {
+    'email': email,
+  };
+  // Assign the specific content to the corresponding field based on the 'title'
+  switch (title) {
+    case 'First Name':
+      data['first_name'] = content;
+      break;
+    case 'Last Name':
+      data['last_name'] = content;
+      break;
+    case 'About':
+      data['about'] = content;
+    case 'Skills':
+      data['tags'] = content;
+    default:
+      break;
+  }
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final responseData = jsonDecode(responseBody);
+        if (responseData == "Profile updated successfully") {
+          SharedPreferencesUtil.updateUserInfo(title, content);
+          msg = "Profile section $title updated successfully";
+        } else {
+          msg = responseData;
+        }
+      } 
+    } else {
+      final responseText = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+      msg = 'Failed to update profile section $title. $responseText';
+    }
+  } catch (e) {
+    msg = 'Error occurred while updating profile section "$title". $e';
+  }
+  return msg;
 }
 
 Future<void> connectToSocket(MessagesModel messagesModel, String currentUserEmail) async {

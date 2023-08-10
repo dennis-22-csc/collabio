@@ -13,10 +13,10 @@ class ProjectUploadScreen extends StatefulWidget {
 
 class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _technologyController = TextEditingController();
+  final TextEditingController _tagController = TextEditingController();
   final TextEditingController _projectTitleController = TextEditingController();
   final TextEditingController _projectDescriptionController = TextEditingController();
-  final List<String> _selectedTechnologies = [];
+  final List<String> _selectedTags = [];
   String? _email;
   String? _name;
 
@@ -36,16 +36,16 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
     });
   }
 
-  void _addTechnology(String technology) {
+  void _addTag(String tag) {
     setState(() {
-      _selectedTechnologies.add(technology);
-      _technologyController.clear();
+      _selectedTags.add(tag);
+      _tagController.clear();
     });
   }
 
-  void _removeTechnology(String technology) {
+  void _removeTag(String tag) {
     setState(() {
-      _selectedTechnologies.remove(technology);
+      _selectedTags.remove(tag);
     });
   }
 
@@ -63,7 +63,7 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
         'title': projectTitle,
         'timestamp': currentTime.toString(),
         'description': projectDescription,
-        'tags': _selectedTechnologies,
+        'tags': _selectedTags,
         'poster_name': _name,
         'poster_email': _email,
       };
@@ -158,33 +158,33 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
                         hintText: 'Enter technologies/languages/frameworks/skills',
                         labelText: 'Technologies/Languages/Frameworks/Skills',
                       ),
-                      controller: _technologyController,
+                      controller: _tagController,
                       onFieldSubmitted: (value) {
-                        _addTechnology(value);
+                        _addTag(value);
                       },
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.add),
                     onPressed: () {
-                      _addTechnology(_technologyController.text);
+                      _addTag(_tagController.text);
                     },
                   ),
                 ],
               ),
               const SizedBox(height: 16.0),
-              Container(
+              SizedBox(
                 height: 50.0,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _selectedTechnologies.length,
+                  itemCount: _selectedTags.length,
                   itemBuilder: (BuildContext context, int index) {
-                    String technology = _selectedTechnologies[index];
+                    String tag = _selectedTags[index];
                     return Chip(
-                      label: Text(technology),
+                      label: Text(tag),
                       deleteIcon: const Icon(Icons.cancel),
                       onDeleted: () {
-                        _removeTechnology(technology);
+                        _removeTag(tag);
                       },
                     );
                   },

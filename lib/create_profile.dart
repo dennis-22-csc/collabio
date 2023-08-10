@@ -17,8 +17,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _aboutController = TextEditingController();
+  final TextEditingController _tagController = TextEditingController();
   File? _profilePicture;
   String? _email;
+  final List<String> _selectedTags = [];
 
   @override
   void initState() {
@@ -32,7 +34,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _aboutController.dispose();
+    _tagController.dispose();
     super.dispose();
+  }
+
+  void _addTag(String tag) {
+    setState(() {
+      _selectedTags.add(tag);
+      _tagController.clear();
+    });
+  }
+
+  void _removeTag(String tag) {
+    setState(() {
+      _selectedTags.remove(tag);
+    });
   }
 
   Future<void> _selectProfilePicture() async {
@@ -75,12 +91,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           lastName: lastName,
           about: about,
           email: email!,
+          tags: _selectedTags,
         );
         // Save data to shared preferences after successful remote save
         Map<String, dynamic> userInfo = {
           'firstName': firstName,
           'lastName': lastName,
           'about': about,
+          'tags': _selectedTags,
         };
         await SharedPreferencesUtil.setUserInfo(userInfo);
         
@@ -211,11 +229,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
               controller: _aboutController,
               decoration: const InputDecoration(
                 labelText: 'About',
-                hintText: 'Tell us something about yourself',
+                hintText: 'Write something about yourself',
               ),
               maxLines: 4,
             ),
             const SizedBox(height: 16.0),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      decoration: const InputDecoration(
+                        hintText: 'Enter technologies/languages/frameworks/skills',
+                        labelText: 'Technologies/Languages/Frameworks/Skills',
+                      ),
+                      controller: _tagController,
+                      onFieldSubmitted: (value) {
+                        _addTag(value);
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () {
+                      _addTag(_tagController.text);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16.0),
+              SizedBox(
+                height: 50.0,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _selectedTags.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    String technology = _selectedTags[index];
+                    return Chip(
+                      label: Text(technology),
+                      deleteIcon: const Icon(Icons.cancel),
+                      onDeleted: () {
+                        _removeTag(technology);
+                      },
+                    );
+                  },
+                ),
+              ),
             ElevatedButton(
               onPressed: _createProfile,
               child: const Text('Create Profile'),

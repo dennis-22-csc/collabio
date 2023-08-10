@@ -9,6 +9,11 @@ class SendDataException implements Exception {
 
   SendDataException(this.message);
 }
+class FetchUserException implements Exception {
+  final String message;
+
+  FetchUserException(this.message);
+}
 
 class DataSender {
   Future<void> sendMessageData(Map<String, dynamic> messageData) async {
@@ -68,7 +73,7 @@ class DataSender {
     return false;
   }
 }
-  Future<Map<String, dynamic>> createNewProject(Map<String, dynamic> project) async {
+  Future<dynamic> createNewProject(Map<String, dynamic> project) async {
     const url = 'http://collabio.denniscode.tech/project';
     final response = await http.post(
       Uri.parse(url),
@@ -78,6 +83,96 @@ class DataSender {
 
     return jsonDecode(response.body);
   }
+
+Future<dynamic> fetchUserInfoFromApi(String email) async {
+  try {
+    final url = Uri.parse('http://collabio.denniscode.tech/get-user');
+    final headers = {'Content-Type': 'application/json'};
+    final body = jsonEncode({'email': email});
+
+    final response = await http.post(url, headers: headers, body: body);
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final jsonData = jsonDecode(responseBody);
+        return convertJsonToUserInfo(jsonData);
+      } else {
+        throw FetchUserException(responseBody);
+      }
+    } else {
+      throw FetchUserException('HTTP Error: ${response.statusCode}');
+    }
+  } catch (error) {
+    throw FetchUserException('User. $error');
+  }
+}
+
+static Map<String, dynamic> convertJsonToUserInfo(Map<String, dynamic> jsonData) {
+  List<String> tagsList = List<String>.from(jsonData['tags']);
+
+  return {
+    'firstName': jsonData['first_name'],
+    'lastName': jsonData['last_name'],
+    'about': jsonData['about'],
+    'tags': tagsList,
+  };
+}
+
+
+Future<String> updateProfileSection(String email, String title, dynamic content) async {
+  late String msg;
+  
+  const String url = 'http://collabio.denniscode.tech/update_profile';
+  final Map<String, dynamic> data = {
+    'email': email,
+  };
+  // Assign the specific content to the corresponding field based on the 'title'
+  switch (title) {
+    case 'First Name':
+      data['first_name'] = content;
+      break;
+    case 'Last Name':
+      data['last_name'] = content;
+      break;
+    case 'About':
+      data['about'] = content;
+    case 'Skills':
+      data['tags'] = content;
+    default:
+      break;
+  }
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final responseData = jsonDecode(responseBody);
+        if (responseData == "Profile updated successfully") {
+          msg = "Profile updated successfully";
+        } else {
+          msg = responseData;
+        }
+      } 
+    } else {
+      final responseText = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+      msg = 'Failed to update profile section "$title". $responseText';
+    }
+  } catch (e) {
+    msg = 'Error occurred while updating profile section "$title". $e';
+  }
+  return msg;
+}
 
 
 /*Future<void> sendMessageData(Map<String, dynamic> messageData) async {
@@ -124,7 +219,7 @@ void main() async {
         .format(DateTime.now()),
   };
 
-/*final project1 = {
+final project1 = {
     'title': 'Build a Social Networking Platform',
     'timestamp': DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now().subtract(const Duration(minutes: 60 * 4))),
@@ -192,10 +287,10 @@ If you are interested in contributing to this app and helping people achieve the
     'tags': ['Mobile App Development', 'Personal Finance', 'iOS', 'Android'],
     'poster_name': 'Ola',
     'poster_email': 'olasmith@gmail.com'
-};*/
+};
 
   //await dataSender.sendNewMessage(message);
-  try {
+  /*try {
   await dataSender.sendMessageData(message);
   //print(result);
   } catch (error) {
@@ -204,8 +299,14 @@ If you are interested in contributing to this app and helping people achieve the
     } else {
       print(error.toString());
     }
-  }
+  }*/
   
-  /*final projectResponse = await dataSender.createNewProject(project1);
+  /*final projectResponse = await dataSender.createNewProject(project3);
   print('Project response: $projectResponse');*/
+
+  //final userResponse = await dataSender.fetchUserInfoFromApi("denniskoko@gmail.com");
+  //print('User Response: $userResponse');
+  
+  final updateResponse = await dataSender.updateProfileSection("dennisthebusinessguru@gmail.com", "Skills", ["fav"]);
+  print(updateResponse);
 }

@@ -47,10 +47,13 @@ static bool isSameDay(String timestamp1, String timestamp2) {
 }
 
 static Map<String, dynamic> convertJsonToUserInfo(Map<String, dynamic> jsonData) {
+  List<String> tagsList = List<String>.from(jsonData['tags']);
+
   return {
     'firstName': jsonData['first_name'],
     'lastName': jsonData['last_name'],
     'about': jsonData['about'],
+    'tags': tagsList,
   };
 }
 
@@ -59,12 +62,14 @@ static Future<void> saveProfileInformation({
     required String lastName,
     required String about,
     required String email,
+    required List<String> tags,
   }) async {
     Map<String, dynamic> userData = {
         'first_name': firstName,
         'last_name': lastName,
         'email': email,
         'about': about,
+        'tags': tags,
         
       };
     try {
@@ -162,12 +167,30 @@ class SharedPreferencesUtil {
     String? firstName = userInfo['firstName'];
     String? lastName = userInfo['lastName'];
     String? about = userInfo['about'];
+    List<String>? tags = userInfo['tags'];
 
     await prefs.setString('firstName', firstName ?? '');
     await prefs.setString('lastName', lastName ?? '');
     await prefs.setString('about', about ?? '');
+    await prefs.setStringList('tags', tags ?? []);
   }
-
+  static updateUserInfo(String title, dynamic content) async {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      switch (title) {
+        case 'First Name':
+          await prefs.setString('firstName', content);
+          break;
+        case 'Last Name':
+          await prefs.setString('lastName', content);
+          break;
+        case 'About':
+          await prefs.setString('about', content);
+        case 'Skills':
+          await prefs.setStringList('tags', content);
+        default:
+          break;
+      }
+  }
   static Future<bool> hasProfile() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getBool('hasProfile') ?? false;
@@ -195,6 +218,11 @@ class SharedPreferencesUtil {
   static Future<String?> getAbout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('about');
+  }
+
+  static Future<List<String>?> getTags() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList('tags');
   }
   static Future<List<String>> fetchFailedIdsFromSharedPrefs() async {
     List<String> failedUuids = [];
