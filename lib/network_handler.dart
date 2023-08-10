@@ -3,7 +3,6 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'dart:convert';
 import 'package:collabio/model.dart';
 import 'package:collabio/util.dart';
-import 'package:collabio/exceptions.dart';
 import 'package:collabio/database.dart';
 
 /*Future<Map<String, dynamic>> fetchUserInfoFromApi(String email) async {
@@ -32,7 +31,8 @@ import 'package:collabio/database.dart';
   }
 }*/
 
-Future<List<Project>> fetchProjectsFromApi() async {
+Future<dynamic> fetchProjectsFromApi() async {
+  late String msg;
   try {
     final url = Uri.parse('http://collabio.denniscode.tech/projects');
     final response = await http.get(url);
@@ -47,17 +47,20 @@ Future<List<Project>> fetchProjectsFromApi() async {
           return Project.fromMap(item);
         }).toList();
       } else {
-        throw FetchProjectsException(responseBody);
+        msg = responseBody;
       }
     } else {
-      throw FetchProjectsException('HTTP Error: ${response.statusCode}');
+      final responseText = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+      msg = 'HTTP Error Projects. $responseText';
     }
   } catch (error) {
-    throw FetchProjectsException('Projects. $error');
+    msg = 'Error Projects. $error';
   }
+  return msg;
 }
 
-Future<List<Message>> fetchMessagesFromApi(String email) async {
+Future<dynamic> fetchMessagesFromApi(String email) async {
+  late String msg;
   try {
     final url = Uri.parse('http://collabio.denniscode.tech/messages');
     final headers = {'Content-Type': 'application/json'};
@@ -75,18 +78,20 @@ Future<List<Message>> fetchMessagesFromApi(String email) async {
           return Message.fromMap(item);
         }).toList();
       } else {
-        throw FetchMessagesException(responseBody);
+        msg = responseBody;
       }
     } else {
-      throw FetchMessagesException('HTTP Error: ${response.statusCode}');
+      final responseText = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+      msg = 'HTTP Error Messages. $responseText';
     }
   } catch (error) {
-    throw FetchMessagesException('Messages. $error');
+    msg = 'Error Messages. $error';
   }
+  return msg;
 }
 
 // Method to delete messages from the API using the inserted message ids
-Future<void> deleteMessages(List<String> messageIds) async {
+/*Future<void> deleteMessages(List<String> messageIds) async {
   try {
     final url = Uri.parse('http://collabio.denniscode.tech/del-messages');
     final headers = {'Content-Type': 'application/json'};
@@ -113,9 +118,10 @@ Future<void> deleteMessages(List<String> messageIds) async {
   } catch (error) {
     throw DeleteMessagesException('Delete Messages. $error');
   }
-}
+}*/
 
 Future<String> sendProjectData(Map<String, dynamic> projectData) async {
+  late String msg;
   String url = 'http://collabio.denniscode.tech/projects';
 
   try {
@@ -132,23 +138,26 @@ Future<String> sendProjectData(Map<String, dynamic> projectData) async {
       if (contentType?.contains('application/json') == true) {
         return jsonDecode(responseBody);
       } else {
-        throw SendDataException(responseBody);
+        msg = responseBody;
       }
     } else {
-      throw SendDataException('HTTP Error: ${response.statusCode}');
+      final responseText = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+      msg = 'HTTP Error Project. $responseText';
     }
   } catch (error) {
-    throw SendDataException('Post Project. $error');
+    msg = 'Error Project. $error';
   }
+  return msg;
 }
 
-Future<void> sendMessageData(MessagesModel messagesModel, Map<String, dynamic> messageData, String currentUserEmail) async {
+Future<String> sendMessageData(MessagesModel messagesModel, Map<String, dynamic> messageData, String currentUserEmail) async {
+  late String msg;
   String url = 'http://collabio.denniscode.tech/message';
 
   try {
     await DatabaseHelper.insertMessage(messageData);
   } catch (error) {
-    throw LocalInsertException('Send Message Local. $error');
+    msg = 'Send Message Local. $error';
   }
 
   try {
@@ -166,21 +175,25 @@ Future<void> sendMessageData(MessagesModel messagesModel, Map<String, dynamic> m
         final responseData = jsonDecode(responseBody);
         if (responseData == "Message inserted successfully.") {
           messagesModel.updateGroupedMessages(currentUserEmail);
+          msg = "Message inserted successfully.";
         } else {
-          throw SendDataException('Send Message Internal $responseData');
+          msg = 'Send Message Internal $responseData';
         }
       } else {
-        throw SendDataException(responseBody);
+        msg = responseBody;
       }
     } else {
-      throw SendDataException('HTTP Error: ${response.statusCode}');
+      final responseText = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+      msg = 'HTTP Error Message. $responseText';
     }
   } catch (error) {
-    throw SendDataException('Send Message External. $error');
+    msg = 'Send Message External. $error';
   }
+  return msg;
 }
 
-Future<void> sendUserData(Map<String, dynamic> userData) async {
+Future<String> sendUserData(Map<String, dynamic> userData) async {
+  late String msg;
   String url = 'http://collabio.denniscode.tech/create-user';
 
   try {
@@ -196,17 +209,17 @@ Future<void> sendUserData(Map<String, dynamic> userData) async {
 
       if (contentType?.contains('application/json') == true) {
         final responseData = jsonDecode(responseBody);
-        if (responseData != "User inserted successfully.") {
-          throw SendDataException(responseData);
-        }
+        msg = responseData;
       }
       
     } else {
-      throw SendDataException('Failed to save user data. Error code: ${response.statusCode}');
-    }
+      final responseText = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+      msg = 'HTTP Error User. $responseText';
+      }
   } catch (error) {
-    throw SendDataException('Error saving user data: $error');
+    msg = 'Error saving user data: $error';
   }
+  return msg;
 }
 
 Future<String> updateProfileSection(String email, String title, dynamic content) async {
@@ -261,7 +274,8 @@ Future<String> updateProfileSection(String email, String title, dynamic content)
   return msg;
 }
 
-Future<void> connectToSocket(MessagesModel messagesModel, String currentUserEmail) async {
+Future<String> connectToSocket(MessagesModel messagesModel, String currentUserEmail) async {
+    late String msg;
     IO.Socket? socket;
     Set<String> receivedMessageIds = {};
     Set<String> receivedProjectIds = {};
@@ -281,7 +295,7 @@ Future<void> connectToSocket(MessagesModel messagesModel, String currentUserEmai
           messageIds.add(messageId);
           messagesModel.updateGroupedMessages(currentUserEmail);
           receivedMessageIds.add(messageId);
-          deleteMessages(messageIds);
+          //deleteMessages(messageIds);
         }
       });
 
@@ -294,11 +308,11 @@ Future<void> connectToSocket(MessagesModel messagesModel, String currentUserEmai
         }
       });
 
-      
+      msg = "Connection successful";
     } catch (error) {
-      throw SocketException ('$error');
+      msg = '$error';
     }
-
+    return msg;
   }
 
 

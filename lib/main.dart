@@ -9,7 +9,6 @@ import 'package:device_preview/device_preview.dart';
 import 'package:collabio/project_page.dart';
 import 'package:collabio/network_handler.dart';
 import 'package:collabio/database.dart';
-import 'package:collabio/exceptions.dart';
 import 'package:collabio/model.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
@@ -86,18 +85,27 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> fetchApiData() async {
-    try {
-      
+    
       // Fetch projects and messages concurrently
-      final projects = await fetchProjectsFromApi();
-      final messages = await fetchMessagesFromApi("denniskoko@gmail.com");
+      final projectResult = await fetchProjectsFromApi();
+      final messageResult = await fetchMessagesFromApi("denniskoko@gmail.com");
 
-      // Insert projects into the database
-      await DatabaseHelper.insertProjects(projects);
-
-      // Insert messages into the database
-      await DatabaseHelper.insertMessages(messages);
-
+      if (projectResult is List<Project>) {
+        // Insert projects into the database
+        await DatabaseHelper.insertProjects(projectResult);
+      } else {
+        _errorOccurred = true;
+        _errorMessage = projectResult;
+      }
+      
+      if (messageResult is List<Message>) {
+        // Insert messages into the database
+        await DatabaseHelper.insertMessages(messageResult);
+      } else {
+        _errorOccurred = true;
+        _errorMessage = projectResult;
+      }
+      
       // Check for any failed UUIDs in shared preferences
       //final failedUuids = await SharedPreferencesUtil.fetchFailedIdsFromSharedPrefs();
 
@@ -112,36 +120,19 @@ class _MyAppState extends State<MyApp> {
         messagesModel.updateGroupedMessages("denniskoko@gmail.com");
 
         //Set up web socket for new messages
-        await connectToSocket(messagesModel, "denniskoko@gmail.com");
+        final socketResult = await connectToSocket(messagesModel, "denniskoko@gmail.com");
+        if (socketResult != "Connection successful") {
+          _errorOccurred = true;
+          _errorMessage = socketResult;
+        }
       });
 
       setState(() {
-      _fetchCompleted = true;
-    });
-
-    } catch (error) {
-      
-      if (error is FetchProjectsException) {
-        _errorMessage = error.message;
-      } else if (error is FetchMessagesException) {
-          _errorMessage = error.message;
-      } else if (error is FetchUserException) {
-          _errorMessage = error.message;
-      } else if (error is DeleteMessagesException) {
-          _errorMessage = error.message;
-      } else if (error is SocketException) {
-          _errorMessage = error.message;
-      }  
-      else {
-        _errorMessage = error.toString();
-      }
-      setState(() {
-        _errorOccurred = true;
+        _errorOccurred = _errorOccurred;
         _errorMessage = _errorMessage;
         _fetchCompleted = true;
       });
     }
-  }
 
 
   @override

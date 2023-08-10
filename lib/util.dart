@@ -6,9 +6,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:collabio/network_handler.dart';
-import 'package:collabio/exceptions.dart';
-
-
 
 class Util {
   static bool isJSON(String data) {
@@ -57,7 +54,7 @@ static Map<String, dynamic> convertJsonToUserInfo(Map<String, dynamic> jsonData)
   };
 }
 
-static Future<void> saveProfileInformation({
+static Future<String> saveProfileInformation({
     required String firstName,
     required String lastName,
     required String about,
@@ -72,13 +69,9 @@ static Future<void> saveProfileInformation({
         'tags': tags,
         
       };
-    try {
-      await sendUserData(userData);
-    } catch (error) {
-      if (error is SendDataException) {
-        throw SendDataException(error.message);
-      } 
-    }
+    
+    String result = await sendUserData(userData);
+    return result;
   }
 
    static Future<bool> _requestPermission(Permission permission) async {

@@ -1,8 +1,7 @@
 import 'package:collabio/util.dart';
 import 'package:flutter/material.dart';
-//import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:collabio/network_handler.dart';
-import 'package:collabio/exceptions.dart';
 
 class ProjectUploadScreen extends StatefulWidget {
   const ProjectUploadScreen({Key? key}) : super(key: key);
@@ -23,9 +22,8 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
   @override
   void initState() {
     super.initState();
-    //User user = FirebaseAuth.instance.currentUser!; 
-    //_email = user.email; 
-    _email = "denniskoko@gmail.com";
+    User user = FirebaseAuth.instance.currentUser!; 
+    _email = user.email; 
     fetchName();
   }
 
@@ -68,22 +66,13 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
         'poster_email': _email,
       };
 
-      try {
+      
         result = await sendProjectData(projectData);
         if (result.startsWith('Project inserted successfully.')) {
           title = 'Success';
         } else {
           title = 'Error';
         }
-      } catch (error) {
-        if (error is SendDataException) {
-          title = 'Error';
-          result = error.message;
-        } else {
-          title = 'Error';
-          result = error.toString();
-        }
-      }
       
 
       // Show a dialog to indicate that the project has been published

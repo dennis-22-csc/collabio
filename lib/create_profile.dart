@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:collabio/project_page.dart';
 import 'package:collabio/util.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:collabio/exceptions.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -80,19 +79,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String lastName = _lastNameController.text;
     String about = _aboutController.text;
     String? email = _email;
+    late String msg;
+    late String title;
 
     if (firstName.isNotEmpty &&
         lastName.isNotEmpty &&
         about.isNotEmpty &&
         _profilePicture != null) {
-      try {
-        await Util.saveProfileInformation(
+      String result = await Util.saveProfileInformation(
           firstName: firstName,
           lastName: lastName,
           about: about,
           email: email!,
           tags: _selectedTags,
         );
+      if (result == "User inserted successfully.") {
+        try {
         // Save data to shared preferences after successful remote save
         Map<String, dynamic> userInfo = {
           'firstName': firstName,
@@ -127,21 +129,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
         );
         });
+        msg = "Profile created successfully";
+        title = "Success";
       } catch (e) {
-        if (e is SendDataException) {
-          showCustomDialog(context, 'Error', e.message);
-        } else {
-          showCustomDialog(context, 'Error', e.toString());
-        }
+        msg = 'Error $e.toString()';
+        title = "Error";
+      }
+      } else {
+        msg = "Failed to create profile $result";
+        title = "Error";
       }
     } else {
-      // Display an error message indicating required fields
-      showCustomDialog(
-        context,
-        'Error',
-        'Please fill in all the required fields including selecting a profile picture.',
-      );
+      msg = 'Please fill in all the required fields including selecting a profile picture.';
+      title = "Error";
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showCustomDialog(context, title, msg);
+    });
   }
 
   void showCustomDialog(BuildContext context, String title, String text) {

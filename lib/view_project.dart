@@ -1,8 +1,6 @@
-import 'package:collabio/exceptions.dart';
 import 'package:flutter/material.dart';
 import 'package:collabio/model.dart';
 import 'package:collabio/network_handler.dart';
-import 'package:collabio/database.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -108,21 +106,10 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
     };
     final messagesModel = Provider.of<MessagesModel>(context, listen: false);
       
-    try {
-      await sendMessageData(messagesModel, message, "denniskoko@gmail.com");
-      showStatusDialog("Message sent successfully");
-    } catch (error) {
-      if (error is LocalInsertException){
-        showStatusDialog("LocalInsertException. ${error.message}");
-      } else if (error is SendDataException){
-        await DatabaseHelper.deleteMessage(message['message_id']!);
-        showStatusDialog("SendDataException. ${error.message}");
-      } else {
-        showStatusDialog("Exception. ${error.toString()}");
-      }
-      
-    }
-
+    
+    String result = await sendMessageData(messagesModel, message, "dennisakpotaire@gmail.com");
+    showStatusDialog(result);
+  
     _messageController.clear();
   }
 
