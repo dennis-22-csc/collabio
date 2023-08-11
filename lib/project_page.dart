@@ -32,6 +32,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
   String? name;
   String? _email;
   File? profilePicture;
+  List<String> tags = [];
   
   @override
   void initState() {
@@ -42,6 +43,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
     getProfileStatus();
     loadProfileContent();
     loadMessages();
+    getSkills();
     }
 
   void loadProfilePicture() async {
@@ -80,6 +82,13 @@ class _MyProjectPageState extends State<MyProjectPage> {
       });
       
   }
+
+  void getSkills() async {
+    List<String> myTags = (await SharedPreferencesUtil.getTags()) ?? ["mobile app development", "web development"];
+    setState(() {
+      tags = myTags;
+    });
+  } 
   void getProfileStatus() async {
     bool myProfile = await SharedPreferencesUtil.hasProfile();
     setState(() {
@@ -141,10 +150,23 @@ class _MyProjectPageState extends State<MyProjectPage> {
     ListTile(
       title: const Text('Create Profile'),
       onTap: () {
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const ProfileScreen()),
         );
+      },
+    ),
+    ListTile(
+      title: const Text('Post Project'),
+      onTap: () {
+        if (hasProfile) {
+          Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ProjectUploadScreen()),
+        );
+        } else {
+          showProfileDialog("You can't post a project without creating a profile.");        
+        }
       },
     ),
   ListTile(
@@ -193,10 +215,10 @@ class _MyProjectPageState extends State<MyProjectPage> {
                   position: const RelativeRect.fromLTRB(1000.0, 80.0, 0.0, 0.0), // Adjust the position as needed
                   items: _buildOptionsMenu(context),
                 ).then((value) {
-                  if (value != null && value == 'post_project' && hasProfile) {
-                   Navigator.push(context, MaterialPageRoute(builder: (context) => const ProjectUploadScreen()),);
-                  } else {
-                    showProfileDialog("You can't post a project without creating a profile.");
+                  if (value != null && value == 'refresh') {
+                    final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
+                    projectsModel.updateProjects(tags, 10);
+                    _searchController.clear();
                   }
                 });
               },
@@ -273,14 +295,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
             setState(() {
               _currentIndex = index;
             });
-            if (index == 0) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MyProjectPage(),
-                ),
-              );
-            } else if (index == 1) {
+            if (index == 1) {
               if (hasProfile) {
                 // If the Messages icon is tapped (index == 1), navigate to the Inbox screen
               Navigator.push(
@@ -313,16 +328,6 @@ class _MyProjectPageState extends State<MyProjectPage> {
     );
   }
 
-
-  List<PopupMenuEntry<String>> _buildOptionsMenu(BuildContext context) {
-    return const <PopupMenuEntry<String>>[
-      PopupMenuItem<String>(
-        value: 'post_project',
-        child: Text('Post Project'),
-      ),
-    ];
-  }
-
   void showProfileDialog(String content){
     showDialog(
       context: context,
@@ -344,6 +349,15 @@ class _MyProjectPageState extends State<MyProjectPage> {
         );
       },
     );
+  }
+
+  List<PopupMenuEntry<String>> _buildOptionsMenu(BuildContext context) {
+    return const <PopupMenuEntry<String>>[
+      PopupMenuItem<String>(
+        value: 'refresh',
+        child: Text('Refresh'),
+      ),
+    ];
   }
 
   
