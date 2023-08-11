@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:collabio/view_project.dart';
 import 'package:collabio/model.dart';
 import 'package:provider/provider.dart';
+import 'package:collabio/util.dart';
 
 class MatchingProjectsTab extends StatelessWidget {
-  const MatchingProjectsTab({Key? key}) : super(key: key);
+
+  const MatchingProjectsTab({Key? key,}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +17,8 @@ class MatchingProjectsTab extends StatelessWidget {
 }
 
 class RecentProjectsTab extends StatelessWidget {
-  const RecentProjectsTab({Key? key}) : super(key: key);
+
+  const RecentProjectsTab({Key? key,}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +60,7 @@ class ProjectsListWidget extends StatelessWidget {
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Posted: ${project.timestamp}'),
+              Text('Posted: ${Util.timeToString(project.timestamp)}'),
               const SizedBox(height: 8.0),
               Text(
                 project.description,

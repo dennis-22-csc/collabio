@@ -29,9 +29,10 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
   }
 
   Future<void> fetchName() async {
-    _name = await SharedPreferencesUtil.getFirstName();
-    setState((){
-      _name = _name;
+    String fName = (await SharedPreferencesUtil.getFirstName()) ?? '';
+    String lName = (await SharedPreferencesUtil.getLastName()) ?? '';
+    setState(() {
+      _name = '$fName $lName';
     });
   }
 

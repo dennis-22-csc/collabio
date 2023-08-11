@@ -138,7 +138,7 @@ class ProjectsModel extends ChangeNotifier {
   List<Project> recentProjects = [];
   List<Project> matchingProjects = [];
 
-  Future<void> updateProjectsForRefresh(List<String> keywords, int limit) async {
+  Future<void> updateProjects(List<String> keywords, int limit) async {
     recentProjects = await DatabaseHelper.getRecentProjects(limit);
     matchingProjects = await DatabaseHelper.getMatchingProjectsAll(keywords, limit);
     notifyListeners();
@@ -149,4 +149,6 @@ class ProjectsModel extends ChangeNotifier {
     matchingProjects = await DatabaseHelper.getMatchingProjectsAll(keywords, limit);
     notifyListeners();
   }
+
+  
 }

@@ -10,9 +10,12 @@ import 'package:collabio/post_project.dart';
 import 'package:collabio/inbox_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:collabio/model.dart';
+import 'package:collabio/database.dart';
+import 'package:collabio/network_handler.dart';
 
 class MyProjectPage extends StatefulWidget {
-  const MyProjectPage({Key? key}) : super(key: key);
+  
+  const MyProjectPage({Key? key,}) : super(key: key);
 
   @override
   State<MyProjectPage> createState() => _MyProjectPageState();
@@ -20,31 +23,27 @@ class MyProjectPage extends StatefulWidget {
 
 class _MyProjectPageState extends State<MyProjectPage> {
   int _currentIndex = 0;
-  File? profilePicture;
+  
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-
-  ProjectsModel? projectsModel;
+  final scaffoldKey = GlobalKey<ScaffoldState>();
+   
   bool hasProfile = false;
   String? name;
-  
+  String? _email;
+  File? profilePicture;
   
   @override
   void initState() {
     super.initState();
-    getProfileStatus();
     loadProfilePicture();
+    User user = FirebaseAuth.instance.currentUser!; 
+    _email = user.email;
+    getProfileStatus();
     loadProfileContent();
-    projectsModel = Provider.of<ProjectsModel>(context, listen: false);
-    projectsModel!.updateProjectsForRefresh(["web development", "frontend"], 10);
-  }
+    loadMessages();
+    }
 
-  void getProfileStatus() async {
-    bool myProfile = await SharedPreferencesUtil.hasProfile();
-    setState(() {
-      hasProfile = myProfile;
-    });
-  }
   void loadProfilePicture() async {
     String? persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
 
@@ -57,14 +56,45 @@ class _MyProjectPageState extends State<MyProjectPage> {
       }
     }
   }
+  void loadMessages() async {
+    final messageResult = await fetchMessagesFromApi(_email!);
+    if (messageResult is List<Message>) {
+        await DatabaseHelper.insertMessages(messageResult);
+    }
 
+      // Check for any failed UUIDs in shared preferences
+      //final failedUuids = await SharedPreferencesUtil.fetchFailedIdsFromSharedPrefs();
+
+      // Include the failed UUIDs along with the newly inserted UUIDs
+      //final allUuids = [...insertedIds, ...failedUuids];
+
+      // Call the /del-messages API with all UUIDs (both inserted and failed)
+      //await deleteMessages(allUuids);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        //Get initial messages from local database
+        final messagesModel = Provider.of<MessagesModel>(context, listen: false);
+        messagesModel.updateGroupedMessages(_email!);
+        //Set up web socket for new messages
+        await connectToSocket(messagesModel, _email!);
+        
+      });
+      
+  }
+  void getProfileStatus() async {
+    bool myProfile = await SharedPreferencesUtil.hasProfile();
+    setState(() {
+      hasProfile = myProfile;
+    });
+  }
+  
   void handleSearch() {
     String searchText = _searchController.text;
     List<String> keywords = searchText.split(',');
     // Remove leading and trailing whitespaces from each keyword
     keywords = keywords.map((keyword) => keyword.trim()).toList();
 
-    projectsModel!.updateProjectsForSearch(keywords, 10);
+    final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
+    projectsModel.updateProjectsForSearch(keywords, 10);
 
     // Unfocus the text field to dismiss the keyboard after search
     _searchFocusNode.unfocus();
@@ -82,12 +112,12 @@ class _MyProjectPageState extends State<MyProjectPage> {
 
   @override
   Widget build(BuildContext context) {
-    var scaffoldKey = GlobalKey<ScaffoldState>();
+    //var scaffoldKey = GlobalKey<ScaffoldState>();
     List<Widget> drawerOptions = [
   if (hasProfile)
     UserAccountsDrawerHeader(
       accountName: Text(name!),
-      accountEmail: const Text('denniskoko@gmail.com'),
+      accountEmail: Text(_email!),
       currentAccountPicture: CircleAvatar(
         backgroundColor: Colors.white,
         backgroundImage: profilePicture != null ? FileImage(profilePicture!) : null,
@@ -163,8 +193,10 @@ class _MyProjectPageState extends State<MyProjectPage> {
                   position: const RelativeRect.fromLTRB(1000.0, 80.0, 0.0, 0.0), // Adjust the position as needed
                   items: _buildOptionsMenu(context),
                 ).then((value) {
-                  if (value != null && value == 'post_project') {
+                  if (value != null && value == 'post_project' && hasProfile) {
                    Navigator.push(context, MaterialPageRoute(builder: (context) => const ProjectUploadScreen()),);
+                  } else {
+                    showProfileDialog("You can't post a project without creating a profile.");
                   }
                 });
               },
@@ -196,7 +228,9 @@ class _MyProjectPageState extends State<MyProjectPage> {
                   controller: _searchController,
                   focusNode: _searchFocusNode,
                   onSubmitted: (_) {
-                    handleSearch(); // Trigger the search when Enter is tapped
+                    if (_searchController.text.trim().isNotEmpty) {
+                      handleSearch();
+                    }
                   },
                   decoration: InputDecoration(
                     hintText: 'Search for projects',
@@ -204,7 +238,11 @@ class _MyProjectPageState extends State<MyProjectPage> {
                     contentPadding: const EdgeInsets.fromLTRB(16.0, 8.0, 8.0, 8.0),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.search),
-                      onPressed: handleSearch,
+                      onPressed: (){
+                        if (_searchController.text.trim().isNotEmpty) {
+                          handleSearch();
+                      }
+                      }
                     ),
                   ),
                 ),
@@ -217,7 +255,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
                 Tab(text: 'Most Recent'),
               ],
             ),
-            const Expanded(
+             const Expanded(
               child: TabBarView(
                 children: [
                   // Projects for Best Matches tab
@@ -235,14 +273,25 @@ class _MyProjectPageState extends State<MyProjectPage> {
             setState(() {
               _currentIndex = index;
             });
-            if (index == 1) {
-              // If the Messages icon is tapped (index == 1), navigate to the Inbox screen
+            if (index == 0) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const InboxScreen(currentUserEmail: 'denniskoko@gmail.com', currentUserName: 'Dennis'),
+                  builder: (context) => const MyProjectPage(),
                 ),
               );
+            } else if (index == 1) {
+              if (hasProfile) {
+                // If the Messages icon is tapped (index == 1), navigate to the Inbox screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => InboxScreen(currentUserEmail: _email!, currentUserName: name!),
+                ),
+              );
+              } else {
+                showProfileDialog("You can't send or view messages without creating a profile.");
+              } 
             }
           },
           items: const <BottomNavigationBarItem>[
@@ -274,5 +323,29 @@ class _MyProjectPageState extends State<MyProjectPage> {
     ];
   }
 
+  void showProfileDialog(String content){
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Hey Chief'),
+          content: Text(content),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+        );
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   
+
 }

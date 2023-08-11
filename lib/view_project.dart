@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:collabio/model.dart';
 import 'package:collabio/network_handler.dart';
+import 'package:collabio/util.dart';
+import 'package:collabio/create_profile.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ViewProjectScreen extends StatefulWidget {
   final Project project;
@@ -19,6 +22,34 @@ class ViewProjectScreen extends StatefulWidget {
 }
 class _ViewProjectScreenState extends State<ViewProjectScreen> {
   final TextEditingController _messageController = TextEditingController();
+  String? name;
+  String? email;
+  bool hasProfile = false;
+
+
+  @override
+  void initState() {
+    super.initState();
+    User user = FirebaseAuth.instance.currentUser!; 
+    email = user.email; 
+    loadNames();
+    getProfileStatus();
+  }
+
+  void loadNames() async {
+    String fName = (await SharedPreferencesUtil.getFirstName()) ?? '';
+    String lName = (await SharedPreferencesUtil.getLastName()) ?? '';
+    setState(() {
+      name = '$fName $lName';
+    });
+  }
+
+  void getProfileStatus() async {
+    bool myProfile = await SharedPreferencesUtil.hasProfile();
+    setState(() {
+      hasProfile = myProfile;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,14 +62,6 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
           },
         ),
         title: const Text('Project Details'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              // Handle menu option
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
       child: Padding(
@@ -54,7 +77,9 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
               ),
             ),
             const SizedBox(height: 8.0),
-            Text('Posted: ${widget.project.timestamp}'),
+            Text('Poster: ${widget.project.posterName}'),
+            const SizedBox(height: 8.0),
+            Text('Posted: ${Util.extractDate(widget.project.timestamp)}'),
             const SizedBox(height: 16.0),
             MarkdownBody(
               data: widget.project.description,
@@ -80,7 +105,12 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
               alignment: Alignment.center,
               child: ElevatedButton(
                 onPressed: () {
-                  _showMessageDialog(context);
+                  if (hasProfile) {
+                    _showMessageDialog(context);
+                  } else {
+                    showProfileDialog("You can't message the poster without creating a profile.");
+                  }
+                  
                 },
                 child: const Text('Message Now'),
               ),
@@ -96,8 +126,8 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
     
     final message = {
       "message_id": const Uuid().v4(),
-      "sender_name": "Dennis",
-      "sender_email": "denniskoko@gmail.com",
+      "sender_name": name,
+      "sender_email": email,
       "receiver_name": widget.project.posterName,
       "receiver_email": widget.project.posterEmail,
       "message": _messageController.text,
@@ -107,7 +137,7 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
     final messagesModel = Provider.of<MessagesModel>(context, listen: false);
       
     
-    String result = await sendMessageData(messagesModel, message, "dennisakpotaire@gmail.com");
+    String result = await sendMessageData(messagesModel, message, email!);
     showStatusDialog(result);
   
     _messageController.clear();
@@ -171,6 +201,29 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void showProfileDialog(String content){
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Hey Chief'),
+          content: Text(content),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+        );
               },
               child: const Text('OK'),
             ),

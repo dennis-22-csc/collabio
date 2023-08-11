@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:collabio/model.dart';
+import 'package:collabio/util.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -168,62 +169,16 @@ static Future<void> insertProject(Map<String, dynamic> jsonData) async {
             posterAbout: map[columnPosterAbout],
           ))
       .toList();
-  return getMatchingProjects(keywords, projects, numProjectsToReturn);
-}
+  return Util.getMatchingProjects(keywords, projects, numProjectsToReturn);
+  }
 
 static Future<List<Project>> getMatchingProjectsRecent(List<String> keywords, int numProjectsToReturn) async {
     List<Project> projects = await getRecentProjects(numProjectsToReturn);
-    return getMatchingProjects(keywords, projects, numProjectsToReturn);
+    return Util.getMatchingProjects(keywords, projects, numProjectsToReturn);
   }
 
 
-  static Future<List<Project>> getMatchingProjects(List<String> keywords, List<Project> projects, int numProjectsToReturn) async {
-    // Calculate match percentage for each project based on skills in description and tags
-    for (Project project in projects) {
-      List<String> projectTags = project.tags.map((tag) => tag.trim().toLowerCase()).toList();
-      List<String> projectTitleWords = project.title.toLowerCase().split(' ');
-
-      int matchingTagCount = 0;
-      int matchingTitleCount = 0;
-
-      for (String skill in keywords) {
-        if (projectTags.contains(skill)) {
-          matchingTagCount++;
-        }
-
-        if (projectTitleWords.contains(skill.toLowerCase())) {
-          matchingTitleCount++;
-        }
-      }
-
-      double tagWeight = 2; // Tags are assigned more weight
-      double matchPercentage = ((matchingTagCount * tagWeight) + matchingTitleCount) /
-        (keywords.length * tagWeight + projectTitleWords.length) * 100;
-      project.matchPercentage = matchPercentage;
-    }
-
-    // Filter projects based on matching skills in description and tags
-    projects = projects.where((project) {
-      List<String> projectTags = project.tags.map((tag) => tag.trim().toLowerCase()).toList();
-      List<String> projectTitleWords = project.title.toLowerCase().split(' ');
-
-      for (String keyword in keywords) {
-        if (projectTags.contains(keyword) || projectTitleWords.contains(keyword.toLowerCase())) {
-          return true; // Include the project in the matching list
-        }
-      }
-
-      return false; // Exclude the project from the matching list
-    }).toList();
-
-    // Sort projects based on match percentage (higher to lower)
-    projects.sort((a, b) => b.matchPercentage.compareTo(a.matchPercentage));
-
-    // Return the top numProjectsToReturn matching projects
-    return projects.take(numProjectsToReturn).toList();
-}
-
-
+  
   static Future<Map<String, List<Message>>> getGroupedMessages(String currentUserEmail) async {
   final db = await _database;
   final maps = await db.rawQuery('''

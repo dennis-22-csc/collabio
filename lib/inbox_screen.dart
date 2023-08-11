@@ -19,8 +19,7 @@ class _InboxScreenState extends State<InboxScreen> {
   @override
   void initState() {
     super.initState();
-    final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-    messagesModel.updateGroupedMessages(widget.currentUserEmail);
+  
   }
 
   @override
@@ -40,7 +39,7 @@ class _InboxScreenState extends State<InboxScreen> {
       ),
       body: groupedMessages.isEmpty
           ? const Center(
-              child: CircularProgressIndicator(),
+              child: Text("No messages in inbox"),
             )
           : ListView.builder(
               itemCount: sortedKeys.length,
@@ -50,12 +49,15 @@ class _InboxScreenState extends State<InboxScreen> {
                 final messages = groupedMessages[groupKey]!;
                 final mostRecentMessage = messages.last;
                 String otherPartyName = "unknown";
-                if (mostRecentMessage.senderName == widget.currentUserName) {
+                String senderName = mostRecentMessage.senderName.trim();
+                String receiverName = mostRecentMessage.receiverName.trim();
+                String userName = widget.currentUserName.trim();
+                if (Util.areEquivalentStrings(senderName, userName)) {
                   // If the current user is the sender, then the other party is the receiver
-                  otherPartyName = mostRecentMessage.receiverName;
-                } else if (mostRecentMessage.receiverName == widget.currentUserName) {
+                  otherPartyName = receiverName;
+                } else if (Util.areEquivalentStrings(receiverName, userName)) {
                   // If the current user is the receiver, then the other party is the sender
-                  otherPartyName = mostRecentMessage.senderName;
+                  otherPartyName = senderName;
                 }
                 return _buildConversationCard(mostRecentMessage: mostRecentMessage, otherPartyName: otherPartyName, groupKey: groupKey);
               },
@@ -64,13 +66,12 @@ class _InboxScreenState extends State<InboxScreen> {
   }
   
   Widget _buildConversationCard({required Message mostRecentMessage, required otherPartyName, required String groupKey}) {
-  String firstLetter = otherPartyName.isNotEmpty ? otherPartyName[0].toUpperCase() : '';
-    return ListTile(
+  return ListTile(
   leading: CircleAvatar(
     radius: 20,
     backgroundColor: Colors.blue,
     child: Text(
-      firstLetter,
+      Util.getLetters(otherPartyName),
       style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
@@ -138,5 +139,8 @@ Widget _buildTimestamp(String timestamp) {
         ),
       );
 }
+
+
+
 
 }

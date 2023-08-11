@@ -88,43 +88,19 @@ class _MyAppState extends State<MyApp> {
   Future<void> fetchApiData() async {
     try {
       final projectResult = await fetchProjectsFromApi();
-      final messageResult = await fetchMessagesFromApi("denniskoko@gmail.com");
-
+      
       if (projectResult is List<Project>) {
         await DatabaseHelper.insertProjects(projectResult);
+        List<String> tags = (await SharedPreferencesUtil.getTags()) ?? ["mobile app development", "web development"];
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
+          projectsModel.updateProjects(tags, 10);
+        });
       } else {
         _showError(projectResult);
         return;
       }
 
-      if (messageResult is List<Message>) {
-        await DatabaseHelper.insertMessages(messageResult);
-      } else {
-        _showError(messageResult);
-        return;
-      }
-
-      // Check for any failed UUIDs in shared preferences
-      //final failedUuids = await SharedPreferencesUtil.fetchFailedIdsFromSharedPrefs();
-
-      // Include the failed UUIDs along with the newly inserted UUIDs
-      //final allUuids = [...insertedIds, ...failedUuids];
-
-      // Call the /del-messages API with all UUIDs (both inserted and failed)
-      //await deleteMessages(allUuids);
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        //Get initial messages from local database
-        final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-        messagesModel.updateGroupedMessages("denniskoko@gmail.com");
-
-        //Set up web socket for new messages
-        final socketResult = await connectToSocket(messagesModel, "denniskoko@gmail.com");
-        if (socketResult != "Connection successful") {
-          _showError(socketResult);
-          return;
-        }
-      });
-      
       setState(() {
         _fetchCompleted = true;
       });
@@ -140,7 +116,6 @@ class _MyAppState extends State<MyApp> {
       _fetchCompleted = true;
     });
   }
-
 
 
   @override
@@ -207,7 +182,6 @@ class _MyAppState extends State<MyApp> {
 
   Widget buildReloadFutureBuilder() {
     if (user == null) {
-
       if (isLoggedOut == true) {
         // user has an account, but logged out
         return const LoginScreen();

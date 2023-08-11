@@ -84,7 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (firstName.isNotEmpty &&
         lastName.isNotEmpty &&
-        about.isNotEmpty &&
+        about.isNotEmpty && _selectedTags.isNotEmpty &&
         _profilePicture != null) {
       String result = await Util.saveProfileInformation(
           firstName: firstName,
@@ -172,7 +172,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('Create Profile'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

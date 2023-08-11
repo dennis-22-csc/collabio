@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:collabio/model.dart';
-//import 'package:collabio/exceptions.dart';
 import 'package:collabio/network_handler.dart';
-//import 'package:collabio/database.dart';
 import 'package:collabio/util.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
-//import 'package:fluttertoast/fluttertoast.dart';
 
 class ChatScreen extends StatelessWidget {
   final String currentUserName;
@@ -182,13 +179,10 @@ class ChatScreen extends StatelessWidget {
       "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
     };
+    
     final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-      
-    try {
-      await sendMessageData(messagesModel, message, currentUserEmail);
-    } catch (error) {
-      // Handle errors
-    }
+    await sendMessageData(messagesModel, message, currentUserEmail);
+    
   }
 
   } 

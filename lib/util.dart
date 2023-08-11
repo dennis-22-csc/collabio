@@ -6,8 +6,24 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:collabio/network_handler.dart';
+import 'package:collabio/model.dart';
 
 class Util {
+  static String extractDate(String timestamp) {
+  DateTime dateTime = DateTime.parse(timestamp);
+  String formattedDate = "${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year}";
+  return formattedDate;
+}
+
+  static String getLetters(String otherPartyName) {
+    List<String> nameParts = otherPartyName.split(" ");
+  
+    String firstLetter = nameParts.isNotEmpty ? nameParts[0][0].toUpperCase() : '';
+    String lastLetter = nameParts.length > 1 ? nameParts[nameParts.length - 1][0].toUpperCase() : '';
+  
+    return "$firstLetter$lastLetter";
+  }
+
   static bool isJSON(String data) {
   try {
     json.decode(data);
@@ -142,6 +158,80 @@ static Future<String> saveProfileInformation({
      return false; // Directory creation failed
    }
 
+  static bool areEquivalentStrings(String str1, String str2) {
+  List<String> words1 = str1.split(' ');
+  List<String> words2 = str2.split(' ');
+
+  words1.sort();
+  words2.sort();
+
+  return words1.join(' ') == words2.join(' ');
+}
+
+  static List<Project> getMatchingProjects(List<String> keywords, List<Project> projects, int numProjectsToReturn) {
+  // Calculate match percentage for each project based on skills in description and tags
+  for (Project project in projects) {
+    int matchingTagCount = 0;
+    int matchingTitleCount = 0;
+
+    List<String> projectTags = project.tags.map((tag) => tag.trim().toLowerCase()).toList();
+    List<String> projectTitleWords = project.title.toLowerCase().split(RegExp(r'\s+'));
+
+    for (String skill in keywords) {
+      if (projectTags.contains(skill.toLowerCase())) {
+        matchingTagCount++;
+      }
+
+      if (projectTitleWords.contains(skill.toLowerCase())) {
+        matchingTitleCount++;
+      }
+    }
+
+    double tagWeight = 2; // Tags are assigned more weight
+    double matchPercentage = ((matchingTagCount * tagWeight) + matchingTitleCount) /
+        (keywords.length * tagWeight + projectTitleWords.length) * 100;
+    project.matchPercentage = matchPercentage;
+  }
+
+  // Filter projects based on matching skills in description and tags
+  List<Project> matchingProjects = projects.where((project) {
+    List<String> projectTags = project.tags.map((tag) => tag.trim().toLowerCase()).toList();
+    List<String> projectTitleWords = project.title.toLowerCase().split(RegExp(r'\s+'));
+
+    return keywords.any((keyword) =>
+        projectTags.contains(keyword.toLowerCase()) ||
+        projectTitleWords.contains(keyword.toLowerCase()));
+  }).toList();
+
+  // Sort projects based on match percentage (higher to lower)
+  matchingProjects.sort((a, b) => b.matchPercentage.compareTo(a.matchPercentage));
+
+  // Return the top numProjectsToReturn matching projects
+  return matchingProjects.take(numProjectsToReturn).toList();
+}
+
+
+  static String timeToString(String timestamp) {
+  DateTime now = DateTime.now();
+  DateTime inputTime = DateTime.parse(timestamp);
+  Duration difference = now.difference(inputTime);
+
+  if (difference.inSeconds < 60) {
+    return '${difference.inSeconds} seconds ago';
+  } else if (difference.inMinutes < 60) {
+    return '${difference.inMinutes} minutes ago';
+  } else if (difference.inHours < 24) {
+    return '${difference.inHours} hours ago';
+  } else if (difference.inDays < 7) {
+    return '${difference.inDays} days ago';
+  } else if (difference.inDays < 30) {
+    int weeks = (difference.inDays / 7).floor();
+    return '$weeks week${weeks > 1 ? "s" : ""} ago';
+  } else {
+    int months = (difference.inDays / 30).floor();
+    return '$months month${months > 1 ? "s" : ""} ago';
+  }
+}
 
 }
 class SharedPreferencesUtil {
