@@ -164,7 +164,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
                   items: _buildOptionsMenu(context),
                 ).then((value) {
                   if (value != null && value == 'post_project') {
-                   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProjectUploadScreen()),);
+                   Navigator.push(context, MaterialPageRoute(builder: (context) => const ProjectUploadScreen()),);
                   }
                 });
               },
