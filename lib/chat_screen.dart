@@ -26,6 +26,9 @@ class ChatScreen extends StatelessWidget {
     final messagesModel = Provider.of<MessagesModel>(context);
     final messages = messagesModel.groupedMessages[otherPartyEmail] ?? [];
 
+    List<String> oldestMessageIds = Util.getOldestMessageIdsGroupedBy24Hours(messages);
+
+
     return Scaffold(
       appBar: AppBar(
         title: Text(otherPartyName),
@@ -34,66 +37,24 @@ class ChatScreen extends StatelessWidget {
         children: [
           Expanded(
             child: ListView.builder(
-              //controller: _scrollController,
               reverse: true,
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final message = messages[index];
-                final isCurrentUserMessage = message.senderEmail == currentUserEmail;
+                
+                // Check if a date separator should be added
+                if (oldestMessageIds.contains(message.id)) {
+                  final separatorText = _getSeparatorText(message.timestamp);
 
-                bool showDateSeparator = index == 0 ||
-                    !Util.isSameDay(
-                      messages[index - 1].timestamp,
-                      message.timestamp,
-                    );
+                  return Column(
+                    children: [
+                      _buildDateSeparator(separatorText),
+                      _buildMessage(context, message),
+                    ],
+                  );
+                }
 
-                return Column(
-                  children: [
-                    if (showDateSeparator)
-                      _buildDateSeparator(message.timestamp),
-                    Row(
-                      mainAxisAlignment: isCurrentUserMessage
-                          ? MainAxisAlignment.end
-                          : MainAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8.0, vertical: 4.0),
-                          constraints: const BoxConstraints(maxWidth: 250),
-                          child: Card (
-                            child: Row (
-                              children: [
-                                Expanded(
-                                child: Padding (
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Column (
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        message.message,
-                                        style: const TextStyle(fontSize: 16),
-                                      ),
-                                      Align(
-                                        alignment: Alignment.centerRight,
-                                        child: Text(
-                                          Util.formatTime(context, message.timestamp),
-                                          style: const TextStyle(fontSize: 12, color: Colors.grey)
-                                          )
-                                        )
-                                    ],
-                                  )
-                                )
-                                )
-                              ],
-                            ) 
-                          )
-
-
-                        ),
-                      ],
-                    ),
-                  ],
-                );
+                return _buildMessage(context, message);
               },
             ),
           ),
@@ -103,29 +64,92 @@ class ChatScreen extends StatelessWidget {
     );
   }
 
-
-  Widget _buildDateSeparator(String timestamp) {
+ 
+String _getSeparatorText(String timestamp) {
   final DateTime messageTime = DateTime.parse(timestamp);
   final DateTime now = DateTime.now();
   final DateTime today = DateTime(now.year, now.month, now.day);
   final DateTime yesterday = today.subtract(const Duration(days: 1));
-  final DateFormat dayFormatter = DateFormat('EEEE'); // Format for day name
-  final DateFormat monthDayFormatter = DateFormat('MMMM d'); // Format for month and day
-  final DateFormat yearMonthDayFormatter = DateFormat('d MMMM y'); // Format for day, month, and year
-  String separatorText = '';
+  final DateFormat dayFormatter = DateFormat('EEEE');
+  final DateFormat monthDayFormatter = DateFormat('MMMM d');
+  final DateFormat yearMonthDayFormatter = DateFormat('d MMMM y');
 
   if (messageTime.isAfter(today)) {
-    separatorText = 'Today';
+    return 'Today';
   } else if (messageTime.isAfter(yesterday)) {
-    separatorText = 'Yesterday';
+    return 'Yesterday';
   } else if (messageTime.isBefore(yesterday.subtract(const Duration(days: 7)))) {
-    separatorText = yearMonthDayFormatter.format(messageTime);
+    return yearMonthDayFormatter.format(messageTime);
   } else {
-    separatorText = messageTime.isBefore(today.subtract(const Duration(days: 7)))
+    return messageTime.isBefore(today.subtract(const Duration(days: 7)))
         ? monthDayFormatter.format(messageTime)
         : dayFormatter.format(messageTime);
   }
+}
 
+
+  Widget _buildMessage(BuildContext context, Message message) {
+  final isCurrentUserMessage = message.senderEmail == currentUserEmail;
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8.0),
+    child: Row(
+      mainAxisAlignment: isCurrentUserMessage
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          constraints: const BoxConstraints(maxWidth: 250),
+          child: Card(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                message.message,
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                Util.formatTime(context, message.timestamp),
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.grey),
+                              ),
+                              buildMessageStatusIcon(message.status),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+  Widget _buildDateSeparator(String separatorText) {
+  
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 8.0),
     child: Center(
@@ -184,13 +208,50 @@ class ChatScreen extends StatelessWidget {
       "message": text,
       "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
+      "status": "pending",
     };
     
     final messagesModel = Provider.of<MessagesModel>(context, listen: false);
     await sendMessageData(messagesModel, message, currentUserEmail);
-
+    
   }
 
   } 
+
+  Widget buildMessageStatusIcon(String status) {
+  switch (status) {
+    case 'sent':
+      return const Row(
+        children: [
+          SizedBox(width: 4.0),
+          Icon(Icons.check, color: Colors.blue, size: 10),
+        ],
+      );
+    case 'pending':
+      return const Row(
+        children: [
+          SizedBox(width: 4.0),
+          Icon(Icons.schedule, color: Colors.grey, size: 10),
+        ],
+      );
+    case 'failed':
+      return const Row(
+        children: [
+          SizedBox(width: 4.0),
+          Icon(Icons.error, color: Colors.red, size: 10),
+        ],
+      );
+    case 'received':
+      return const SizedBox.shrink();
+    default:
+      return const Row(
+        children: [
+          SizedBox(width: 4.0),
+          Icon(Icons.schedule, color: Colors.grey, size: 10),
+        ],
+      );
+  }
+}
+
   
 }

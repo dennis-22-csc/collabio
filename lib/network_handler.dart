@@ -73,7 +73,8 @@ Future<dynamic> fetchMessagesFromApi(String email) async {
       final responseBody = response.body;
 
       if (contentType?.contains('application/json') == true) {
-        final jsonData = jsonDecode(responseBody) as List<dynamic>;
+        dynamic jsonData = jsonDecode(responseBody) as List<dynamic>;
+        jsonData["status"] = "received";
         return jsonData.map<Message>((item) {
           return Message.fromMap(item);
         }).toList();
@@ -156,6 +157,7 @@ Future<String> sendMessageData(MessagesModel messagesModel, Map<String, dynamic>
 
   try {
     await DatabaseHelper.insertMessage(messageData);
+    messagesModel.updateGroupedMessages(currentUserEmail);
   } catch (error) {
     msg = 'Send Message Local. $error';
   }
@@ -174,11 +176,13 @@ Future<String> sendMessageData(MessagesModel messagesModel, Map<String, dynamic>
       if (contentType?.contains('application/json') == true) {
         final responseData = jsonDecode(responseBody);
         if (responseData == "Message inserted successfully.") {
+          await DatabaseHelper.updateMessageStatus(messageData["message_id"], "sent");
           messagesModel.updateGroupedMessages(currentUserEmail);
-          msg = "Message inserted successfully.";
+          return "Message inserted successfully.";
         } else {
           msg = 'Send Message Internal $responseData';
         }
+        
       } else {
         msg = responseBody;
       }
@@ -189,6 +193,9 @@ Future<String> sendMessageData(MessagesModel messagesModel, Map<String, dynamic>
   } catch (error) {
     msg = 'Send Message External. $error';
   }
+
+  await DatabaseHelper.updateMessageStatus(messageData["message_id"], "failed");
+  messagesModel.updateGroupedMessages(currentUserEmail);  
   return msg;
 }
 
@@ -287,7 +294,8 @@ Future<String> connectToSocket(MessagesModel messagesModel, String currentUserEm
 
       socket.on('new_message', (data) {
         List<String> messageIds = [];
-        final message = jsonDecode(data);
+        dynamic message = jsonDecode(data);
+        message["status"] = "received";
         final messageId = message['message_id'];
         if (!receivedMessageIds.contains(messageId)) {
           DatabaseHelper.insertMessage(message);

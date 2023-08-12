@@ -74,6 +74,7 @@ class Message {
   final String receiverEmail;
   final String message;
   final String timestamp;
+  final String status;
 
   Message({
     required this.id,
@@ -83,6 +84,7 @@ class Message {
     required this.receiverEmail,
     required this.message,
     required this.timestamp,
+    required this.status,
   });
 
   Map<String, dynamic> toMap() {
@@ -94,6 +96,7 @@ class Message {
       DatabaseHelper.columnReceiverEmail: receiverEmail,
       DatabaseHelper.columnMessage: message,
       DatabaseHelper.columnMessageTimestamp: timestamp,
+      DatabaseHelper.columnMessageStatus: status,
     };
   }
 
@@ -107,6 +110,7 @@ class Message {
       receiverEmail: map['receiver_email'],
       message: map['message'],
       timestamp: map['timestamp'],
+      status: map['status'],
     );
   }
 
@@ -119,7 +123,8 @@ class Message {
         'receiver: $receiverName, '
         'receiverEmail: $receiverEmail, '
         'message: $message, '
-        'timestamp: $timestamp'
+        'timestamp: $timestamp, '
+        'status: $status '
         '}';
   }
 
@@ -127,11 +132,12 @@ class Message {
 
 class MessagesModel extends ChangeNotifier {
   Map<String, List<Message>> groupedMessages = {};
-
+  
   Future<void> updateGroupedMessages(String currentUserEmail) async {
     groupedMessages = await DatabaseHelper.getGroupedMessages(currentUserEmail);
     notifyListeners();
   }
+
 }
 
 class ProjectsModel extends ChangeNotifier {

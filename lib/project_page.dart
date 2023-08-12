@@ -59,7 +59,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
     }
   }
   void loadMessages() async {
-    final messageResult = await fetchMessagesFromApi(_email!);
+    dynamic messageResult = await fetchMessagesFromApi(_email!);
     if (messageResult is List<Message>) {
         await DatabaseHelper.insertMessages(messageResult);
     }

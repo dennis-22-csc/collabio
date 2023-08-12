@@ -233,6 +233,38 @@ static Future<String> saveProfileInformation({
   }
 }
 
+
+static List<String> getOldestMessageIdsGroupedBy24Hours(List<Message> messages) {
+  
+  // Create a copy of the newMessages list
+  List<Message> sortedMessages = List.from(messages);
+
+  // Sort the copy of the list
+  sortedMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+  List<String> oldestMessageIds = [];
+  List<Message> currentGroup = [];
+
+  for (int i = 0; i < sortedMessages.length; i++) {
+    if (currentGroup.isEmpty) {
+      currentGroup.add(sortedMessages[i]);
+    } else {
+      if (DateTime.parse(sortedMessages[i].timestamp).difference(DateTime.parse(currentGroup.last.timestamp)).inHours <= 24) {
+        currentGroup.add(sortedMessages[i]);
+      } else {
+        oldestMessageIds.add(currentGroup.first.id);
+        currentGroup = [sortedMessages[i]];
+      }
+    }
+  }
+
+  if (currentGroup.isNotEmpty) {
+    oldestMessageIds.add(currentGroup.first.id);
+  }
+
+  return oldestMessageIds;
+}
+
 }
 class SharedPreferencesUtil {
   static Future<void> setHasProfile(bool hasProfile) async {

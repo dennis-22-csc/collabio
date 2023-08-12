@@ -133,10 +133,9 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
       "message": _messageController.text,
       "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
+      "status": "pending",
     };
     final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-      
-    
     String result = await sendMessageData(messagesModel, message, email!);
     showStatusDialog(result);
   

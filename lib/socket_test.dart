@@ -136,7 +136,7 @@ class DataSender {
 
 
 void main() async {
-  /*final dataSender = DataSender();
+  final dataSender = DataSender();
   
   // Simulate sending a new message to the Flask /message route
   final message = {
@@ -145,10 +145,11 @@ void main() async {
     "sender_email": "alimatsadiat@gmail.com",
     "receiver_name": "Dennis Akpotaire",
     "receiver_email": "dennisthebusinessguru@gmail.com",
-    "message": "Okay",
+    "message": "Okay.",
     "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
-  };*/
+    "status": "pending",
+  };
 
 /*final project1 = {
     'title': 'Build a Social Networking Platform',
@@ -289,8 +290,8 @@ If you are interested in contributing to this app and helping people achieve the
     'poster_email': 'olasmith@gmail.com'
 }
 ];
- //final messageResponse = await dataSender.sendMessageData(message);
- //print(messageResponse);
+ final messageResponse = await dataSender.sendMessageData(message);
+ print(messageResponse);
   
   //final projectResponse = await dataSender.createNewProject(project3);
   //print('Project response: $projectResponse');
@@ -298,16 +299,16 @@ If you are interested in contributing to this app and helping people achieve the
   //final userResponse = await dataSender.fetchUserInfoFromApi("denniskoko@gmail.com");
   //print('User Response: $userResponse');
 
-  List<Project> projects = projectData.map((projectMap) => Project.fromMap(projectMap)).toList();
+  //List<Project> projects = projectData.map((projectMap) => Project.fromMap(projectMap)).toList();
 
   /*List<Project> matchingProjects1 = getMatchingProjects(["mobile app development", "android", ], projects, 10);
   for (var project in matchingProjects1) {
     print(project);
   }*/
 
-  List<Project> matchingProjects2 = getMatchingProjects(["Finance", ], projects, 10);
+  /*List<Project> matchingProjects2 = getMatchingProjects(["Finance", ], projects, 10);
   for (var project in matchingProjects2) {
     print(project);
-  }
+  }*/
 
 }

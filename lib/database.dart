@@ -30,6 +30,7 @@ class DatabaseHelper {
   static const columnReceiverEmail = 'receiver_email';
   static const columnMessage = 'message';
   static const columnMessageTimestamp = 'timestamp';
+  static const columnMessageStatus = 'status';
 
   
   factory DatabaseHelper() {
@@ -77,7 +78,8 @@ class DatabaseHelper {
         $columnReceiverName TEXT NOT NULL,
         $columnReceiverEmail TEXT NOT NULL,
         $columnMessage TEXT NOT NULL,
-        $columnMessageTimestamp TEXT NOT NULL
+        $columnMessageTimestamp TEXT NOT NULL,
+        $columnMessageStatus TEXT NOT NULL
       )
       ''');
   }
@@ -99,7 +101,7 @@ class DatabaseHelper {
 
   List<String> insertedIds = [];
   for (Message message in messages) {
-    batch.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
+    batch.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
     insertedIds.add(message.id);
   }
   await batch.commit();
@@ -109,8 +111,18 @@ class DatabaseHelper {
 static Future<bool> insertMessage(Map<String, dynamic> jsonData) async {
   Database db = await _database; 
   final Message message = Message.fromMap(jsonData);
-  await db.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
+  await db.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   return true;
+}
+
+static Future<void> updateMessageStatus(String messageId, String newStatus) async {
+    Database db = await _database;  
+    await db.update(
+      _messagesTable,
+      {columnMessageStatus: newStatus},
+      where: '$columnMessageId = ?',
+      whereArgs: [messageId],
+    );
 }
 
 static Future<bool> deleteMessage(String messageId) async {

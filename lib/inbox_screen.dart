@@ -95,6 +95,8 @@ class _InboxScreenState extends State<InboxScreen> {
   ),
   subtitle: Text(
     mostRecentMessage.message,
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
     style: const TextStyle(
       fontSize: 16,
     ),
