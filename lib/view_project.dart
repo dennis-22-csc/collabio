@@ -8,6 +8,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:collabio/inbox_screen.dart';
+
 
 class ViewProjectScreen extends StatefulWidget {
   final Project project;
@@ -136,13 +138,13 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
       "status": "pending",
     };
     final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-    String result = await sendMessageData(messagesModel, message, email!);
+    final result = await sendMessageData(messagesModel, message, email!);
     showStatusDialog(result);
-  
     _messageController.clear();
   }
 
   void _showMessageDialog(BuildContext context) {
+    
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -153,7 +155,7 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
         return Scaffold(
           appBar: AppBar(
             leading: IconButton(
-              icon: const Icon(Icons.cancel),
+              icon: const Icon(Icons.arrow_back),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -163,10 +165,12 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
           body: Column(
             children: [
               Container(
+                height: 150,
                 padding: const EdgeInsets.all(20),
                 child: TextField(
                   controller: _messageController,
                   maxLines: null,
+                  expands: true,
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.newline,
                   decoration: const InputDecoration(
@@ -199,7 +203,10 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
           actions: [
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => InboxScreen(currentUserName: name!, currentUserEmail: email!)),
+        );
               },
               child: const Text('OK'),
             ),
@@ -219,7 +226,7 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
           actions: [
             ElevatedButton(
               onPressed: () {
-                Navigator.pushReplacement(
+                Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const ProfileScreen()),
         );

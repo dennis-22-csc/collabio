@@ -4,6 +4,7 @@ import 'package:collabio/chat_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:collabio/util.dart';
+import 'package:collabio/project_page.dart';
 
 class InboxScreen extends StatefulWidget {
   final String currentUserName;
@@ -35,6 +36,12 @@ class _InboxScreenState extends State<InboxScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MyProjectPage(), ), );
+            },
+          ),
         title: const Text('Inbox'),
       ),
       body: groupedMessages.isEmpty

@@ -90,7 +90,7 @@ String _getSeparatorText(String timestamp) {
 
   Widget _buildMessage(BuildContext context, Message message) {
   final isCurrentUserMessage = message.senderEmail == currentUserEmail;
-
+  
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 8.0),
     child: Row(
@@ -166,15 +166,21 @@ String _getSeparatorText(String timestamp) {
   
   Widget _buildMessageComposer(BuildContext context) {
   final TextEditingController textController = TextEditingController();
+
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 8.0),
     child: Row(
       children: [
         Expanded(
           child: Container(
+            height: 50,
             margin: const EdgeInsets.only(top: 8.0, bottom: 8.0),
             child: TextField(
               controller: textController,
+              maxLines: null,
+              expands: true,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline, 
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 hintText: 'Enter new message',

@@ -217,6 +217,20 @@ static Future<List<Project>> getMatchingProjectsRecent(List<String> keywords, in
   return groupedMessages;
 }
 
+static Future<List<Map<String, dynamic>>> getUnsentMessages() async {
+  final db = await _database;
+  final statusValues = ['failed', 'pending'];
+  final statusCondition = statusValues.map((status) => '$columnMessageStatus = ?').join(' OR ');
+
+  final maps = await db.query(
+    _messagesTable,
+    where: statusCondition,
+    whereArgs: statusValues,
+    orderBy: '$columnMessageTimestamp DESC',
+  );
+
+  return List<Map<String, dynamic>>.from(maps);
+}
 
   
 }

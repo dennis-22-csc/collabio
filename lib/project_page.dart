@@ -76,11 +76,20 @@ class _MyProjectPageState extends State<MyProjectPage> {
         //Get initial messages from local database
         final messagesModel = Provider.of<MessagesModel>(context, listen: false);
         messagesModel.updateGroupedMessages(_email!);
+
         //Set up web socket for new messages
         await connectToSocket(messagesModel, _email!);
+
+        // Resend unsent messages
+        final messages = await DatabaseHelper.getUnsentMessages();
+        if (messages.isNotEmpty) {
+          for (var message in messages) {
+            await sendMessageData(messagesModel, message, _email!);
+          }
+        }
         
       });
-      
+
   }
 
   void getSkills() async {
