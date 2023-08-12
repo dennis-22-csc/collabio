@@ -88,7 +88,8 @@ class _MyAppState extends State<MyApp> {
   Future<void> fetchApiData() async {
     try {
       final projectResult = await fetchProjectsFromApi();
-      
+      final List<String> receivedMessageIds = await DatabaseHelper.getMessageIdsWithStatus("received");
+
       if (projectResult is List<Project>) {
         await DatabaseHelper.insertProjects(projectResult);
         List<String> tags = (await SharedPreferencesUtil.getTags()) ?? ["mobile app development", "web development"];
@@ -99,6 +100,10 @@ class _MyAppState extends State<MyApp> {
       } else {
         _showError(projectResult);
         return;
+      }
+
+      if (receivedMessageIds.isNotEmpty) {
+        await deleteMessages(receivedMessageIds); 
       }
 
       setState(() {

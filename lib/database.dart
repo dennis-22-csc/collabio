@@ -232,5 +232,18 @@ static Future<List<Map<String, dynamic>>> getUnsentMessages() async {
   return List<Map<String, dynamic>>.from(maps);
 }
 
-  
+  static Future<List<String>> getMessageIdsWithStatus(String targetStatus) async {
+  final db = await _database;
+
+  final maps = await db.query(
+    _messagesTable,
+    where: '$columnMessageStatus = ?',
+    whereArgs: [targetStatus],
+  );
+
+  return List.generate(maps.length, (i) {
+    return maps[i][columnMessageId] as String;
+  });
+}
+
 }

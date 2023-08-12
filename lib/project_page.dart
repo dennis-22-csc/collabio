@@ -64,14 +64,6 @@ class _MyProjectPageState extends State<MyProjectPage> {
         await DatabaseHelper.insertMessages(messageResult);
     }
 
-      // Check for any failed UUIDs in shared preferences
-      //final failedUuids = await SharedPreferencesUtil.fetchFailedIdsFromSharedPrefs();
-
-      // Include the failed UUIDs along with the newly inserted UUIDs
-      //final allUuids = [...insertedIds, ...failedUuids];
-
-      // Call the /del-messages API with all UUIDs (both inserted and failed)
-      //await deleteMessages(allUuids);
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         //Get initial messages from local database
         final messagesModel = Provider.of<MessagesModel>(context, listen: false);

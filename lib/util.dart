@@ -339,24 +339,5 @@ class SharedPreferencesUtil {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getStringList('tags');
   }
-  static Future<List<String>> fetchFailedIdsFromSharedPrefs() async {
-    List<String> failedUuids = [];
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    failedUuids = prefs.getStringList('failed_message_uuids') ?? [];
-    if (failedUuids.isNotEmpty) {
-    // Clear the stored failed UUIDs after fetching them
-    await prefs.remove('failed_message_uuids');
-    }
-    return failedUuids;
-  }
-
-static Future<void> storeFailedMessageUuids(List<String> failedUuids) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  List<String> existingFailedUuids = prefs.getStringList('failed_message_uuids') ?? [];
-  existingFailedUuids.addAll(failedUuids);
-  await prefs.setStringList('failed_message_uuids', existingFailedUuids);
-}
-
-
 
 }

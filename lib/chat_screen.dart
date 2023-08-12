@@ -247,15 +247,8 @@ String _getSeparatorText(String timestamp) {
           Icon(Icons.error, color: Colors.red, size: 10),
         ],
       );
-    case 'received':
-      return const SizedBox.shrink();
     default:
-      return const Row(
-        children: [
-          SizedBox(width: 4.0),
-          Icon(Icons.schedule, color: Colors.grey, size: 10),
-        ],
-      );
+      return const SizedBox.shrink();
   }
 }
 

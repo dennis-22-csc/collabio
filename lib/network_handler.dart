@@ -91,8 +91,8 @@ Future<dynamic> fetchMessagesFromApi(String email) async {
   return msg;
 }
 
-// Method to delete messages from the API using the inserted message ids
-/*Future<void> deleteMessages(List<String> messageIds) async {
+Future<String> deleteMessages(List<String> messageIds) async {
+  late String msg;
   try {
     final url = Uri.parse('http://collabio.denniscode.tech/del-messages');
     final headers = {'Content-Type': 'application/json'};
@@ -106,20 +106,42 @@ Future<dynamic> fetchMessagesFromApi(String email) async {
 
       if (contentType?.contains('application/json') == true) {
         final responseData = jsonDecode(responseBody);
-        if (responseData.containsKey('failed_uuids')) {
-          final failedUuids = (responseData['failed_uuids'] as List<dynamic>).cast<String>();
-          await SharedPreferencesUtil.storeFailedMessageUuids(failedUuids);
+
+        if (responseData.containsKey('message')) {
+          for (String element in messageIds) {
+            await DatabaseHelper.updateMessageStatus(element, "deleted");
+          }
+          msg = "All messages deleted successfully";
+        } else if (responseData.containsKey('results')) {
+          Map<String, dynamic> results = Map<String, dynamic>.from(responseData['results']);
+          List<String> uuidsList = [];
+          List<String> resultsList = [];
+
+          results.forEach((uuid, result) {
+            uuidsList.add(uuid);
+            resultsList.add('$uuid - $result');
+          }); 
+          
+          Set<String> failedUuidsSet = Set.from(uuidsList);
+          for (String element in messageIds) {
+            if (!failedUuidsSet.contains(element)) {
+              await DatabaseHelper.updateMessageStatus(element, "deleted");
+            }
+          }
+          msg = resultsList[0];
         }
+        
       } else {
-        throw DeleteMessagesException(responseBody);
+        msg = "Delete $responseBody";
       }
     } else {
-      throw DeleteMessagesException('HTTP Error: ${response.statusCode}');
+      msg = 'Delete HTTP Error: ${response.statusCode}';
     }
   } catch (error) {
-    throw DeleteMessagesException('Delete Messages. $error');
+    msg = 'Delete Messages. $error';
   }
-}*/
+  return msg;
+}
 
 Future<String> sendProjectData(Map<String, dynamic> projectData) async {
   late String msg;
