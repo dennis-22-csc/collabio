@@ -189,7 +189,7 @@ static Future<List<Project>> getMatchingProjectsRecent(List<String> keywords, in
     END AS group_key
     FROM $_messagesTable
     WHERE $columnSenderEmail = ? OR $columnReceiverEmail = ?
-    ORDER BY $columnMessageTimestamp ASC
+    ORDER BY $columnMessageTimestamp DESC
   ''', [currentUserEmail, currentUserEmail, currentUserEmail]);
 
   final groupedMessages = <String, List<Message>>{};

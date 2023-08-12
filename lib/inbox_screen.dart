@@ -28,8 +28,8 @@ class _InboxScreenState extends State<InboxScreen> {
     final groupedMessages = messagesModel.groupedMessages;
     final sortedKeys = groupedMessages.keys.toList()
       ..sort((a, b) {
-        final mostRecentMessageA = groupedMessages[a]!.last;
-        final mostRecentMessageB = groupedMessages[b]!.last;
+        final mostRecentMessageA = groupedMessages[a]!.first;
+        final mostRecentMessageB = groupedMessages[b]!.first;
         return mostRecentMessageB.timestamp.compareTo(mostRecentMessageA.timestamp);
       });
 
@@ -47,7 +47,7 @@ class _InboxScreenState extends State<InboxScreen> {
                 
                 final groupKey = sortedKeys[index];
                 final messages = groupedMessages[groupKey]!;
-                final mostRecentMessage = messages.last;
+                final mostRecentMessage = messages.first;
                 String otherPartyName = "unknown";
                 String senderName = mostRecentMessage.senderName.trim();
                 String receiverName = mostRecentMessage.receiverName.trim();

@@ -20,6 +20,7 @@ class ChatScreen extends StatelessWidget {
     required this.otherPartyEmail,
   }) : super(key: key);
 
+  
   @override
   Widget build(BuildContext context) {
     final messagesModel = Provider.of<MessagesModel>(context);
@@ -33,6 +34,8 @@ class ChatScreen extends StatelessWidget {
         children: [
           Expanded(
             child: ListView.builder(
+              //controller: _scrollController,
+              reverse: true,
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final message = messages[index];
@@ -138,12 +141,14 @@ class ChatScreen extends StatelessWidget {
 }
   
   Widget _buildMessageComposer(BuildContext context) {
-    final TextEditingController textController = TextEditingController();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Row(
-        children: [
-          Expanded(
+  final TextEditingController textController = TextEditingController();
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+    child: Row(
+      children: [
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.only(top: 8.0, bottom: 8.0),
             child: TextField(
               controller: textController,
               decoration: InputDecoration(
@@ -155,17 +160,18 @@ class ChatScreen extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: () {
-              _sendMessage(context, textController.text);
-              textController.clear();
-            },
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+        IconButton(
+          icon: const Icon(Icons.send),
+          onPressed: () {
+            _sendMessage(context, textController.text);
+            textController.clear();
+          },
+        ),
+      ],
+    ),
+  );
+}
 
   void _sendMessage(BuildContext context, String text) async {
     if (text.trim().isNotEmpty) {
@@ -182,7 +188,7 @@ class ChatScreen extends StatelessWidget {
     
     final messagesModel = Provider.of<MessagesModel>(context, listen: false);
     await sendMessageData(messagesModel, message, currentUserEmail);
-    
+
   }
 
   } 
