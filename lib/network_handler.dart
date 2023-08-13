@@ -5,7 +5,9 @@ import 'package:collabio/model.dart';
 import 'package:collabio/util.dart';
 import 'package:collabio/database.dart';
 
-/*Future<Map<String, dynamic>> fetchUserInfoFromApi(String email) async {
+Future<dynamic> fetchUserInfoFromApi(String email) async {
+  late String msg;
+
   try {
     final url = Uri.parse('http://collabio.denniscode.tech/get-user');
     final headers = {'Content-Type': 'application/json'};
@@ -18,18 +20,24 @@ import 'package:collabio/database.dart';
       final responseBody = response.body;
 
       if (contentType?.contains('application/json') == true) {
-        final jsonData = jsonDecode(responseBody);
-        return Util.convertJsonToUserInfo(jsonData);
+        final responseData = jsonDecode(responseBody);
+        if (responseData.containsKey('error')) {
+          return responseData["error"];
+        } else if (responseData.containsKey('user')) {
+          Map<String, dynamic> results = Map<String, dynamic>.from(responseData['user']);
+          return Util.convertJsonToUserInfo(results);
+        }
       } else {
-        throw FetchUserException(responseBody);
+        msg = responseBody;
       }
     } else {
-      throw FetchUserException('HTTP Error: ${response.statusCode}');
+      msg = 'HTTP Error: ${response.statusCode}';
     }
   } catch (error) {
-    throw FetchUserException('User. $error');
+    msg = 'User. $error';
   }
-}*/
+  return msg;
+}
 
 Future<dynamic> fetchProjectsFromApi() async {
   late String msg;
@@ -42,10 +50,15 @@ Future<dynamic> fetchProjectsFromApi() async {
       final responseBody = response.body;
 
       if (contentType?.contains('application/json') == true) {
-        final jsonData = jsonDecode(responseBody);
-        return jsonData.map<Project>((item) {
-          return Project.fromMap(item);
-        }).toList();
+        final responseData = jsonDecode(responseBody);
+        if (responseData.containsKey('error')) {
+          return responseData["error"];
+        } else if (responseData.containsKey('projects')) {
+          final results = responseData['projects'];
+          return results.map<Project>((item) {
+            return Project.fromMap(item);
+          }).toList();
+        }
       } else {
         msg = responseBody;
       }
@@ -73,11 +86,21 @@ Future<dynamic> fetchMessagesFromApi(String email) async {
       final responseBody = response.body;
 
       if (contentType?.contains('application/json') == true) {
-        dynamic jsonData = jsonDecode(responseBody) as List<dynamic>;
-        jsonData["status"] = "received";
-        return jsonData.map<Message>((item) {
-          return Message.fromMap(item);
-        }).toList();
+        dynamic responseData = jsonDecode(responseBody);
+        
+        if (responseData.containsKey('error')) {
+          return responseData["error"];
+        } else if (responseData.containsKey('messages')) {
+          dynamic jsonData = responseData['messages'];
+          
+          for (var item in jsonData) {
+            item["status"] = "received";
+          }
+    
+          return jsonData.map<Message>((item) {
+            return Message.fromMap(item);
+          }).toList();
+        }
       } else {
         msg = responseBody;
       }

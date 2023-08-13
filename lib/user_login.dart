@@ -4,6 +4,7 @@ import 'package:collabio/email_verification.dart';
 import 'package:collabio/user_registeration.dart';
 import 'package:collabio/util.dart';
 import 'package:collabio/project_page.dart';
+import 'package:collabio/network_handler.dart';
 
 class LoginScreen extends StatefulWidget {
 
@@ -18,12 +19,21 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _auth = FirebaseAuth.instance;
+  bool hasProfile = false; 
 
   Future<void> loginUser(String email, String password) async {
     try {
       final userCredential = await _auth.signInWithEmailAndPassword(email: email, password: password);
 
       if (userCredential.user?.emailVerified == true) {
+        // Get and set profile info in cases where app data was cleared
+        if (!hasProfile) {
+          final fetchResult = await fetchUserInfoFromApi(email);
+          if (fetchResult is Map<String, dynamic>) {
+            SharedPreferencesUtil.setUserInfo(fetchResult);
+            SharedPreferencesUtil.setHasProfile(true);
+          }
+        }
         SharedPreferencesUtil.setLoggedOut(false);
         // User login successful and email verified, show project page
         WidgetsBinding.instance.addPostFrameCallback((_) {
