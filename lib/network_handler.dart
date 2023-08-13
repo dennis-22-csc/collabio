@@ -338,16 +338,13 @@ Future<String> connectToSocket(MessagesModel messagesModel, String currentUserEm
       });
 
       socket.on('new_message', (data) {
-        List<String> messageIds = [];
         dynamic message = jsonDecode(data);
         message["status"] = "received";
         final messageId = message['message_id'];
         if (!receivedMessageIds.contains(messageId)) {
           DatabaseHelper.insertMessage(message);
-          messageIds.add(messageId);
           messagesModel.updateGroupedMessages(currentUserEmail);
           receivedMessageIds.add(messageId);
-          //deleteMessages(messageIds);
         }
       });
 

@@ -298,7 +298,6 @@ class _MyProjectPageState extends State<MyProjectPage> {
             });
             if (index == 1) {
               if (hasProfile) {
-                // If the Messages icon is tapped (index == 1), navigate to the Inbox screen
               Navigator.push(
                 context,
                 MaterialPageRoute(

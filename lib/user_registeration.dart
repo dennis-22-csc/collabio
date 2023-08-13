@@ -24,11 +24,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         password: password,
       );
 
-      userCredential.uuid
-
     } catch (e) {
       // User registration failed
-      // Handle the error or display an error message to the user
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -81,7 +78,6 @@ Widget build(BuildContext context) {
                 if (value!.isEmpty) {
                   return 'Please enter your email address';
                 }
-                // You can add additional email validation if needed
                 return null;
               },
             ),
@@ -96,7 +92,6 @@ Widget build(BuildContext context) {
                 if (value!.isEmpty) {
                   return 'Please enter a password';
                 }
-                // You can add additional password validation if needed
                 return null;
               },
             ),

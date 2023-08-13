@@ -21,7 +21,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   Timer? timer;
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     if (widget.user != null) {
       // User parameter is provided, handle user verification
@@ -65,7 +64,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     timer?.cancel();
     super.dispose();
   }

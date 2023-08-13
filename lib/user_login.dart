@@ -58,7 +58,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } on FirebaseAuthException catch (e) {
       // User login failed
-      // Display an error dialog to the user
       String message;
       if (e.code == 'invalid-email') {
         message = 'The email address is invalid.';

@@ -68,7 +68,7 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
         'poster_email': _email,
       };
 
-      
+        // Send project
         result = await sendProjectData(projectData);
         if (result.startsWith('Project inserted successfully.')) {
           title = 'Success';

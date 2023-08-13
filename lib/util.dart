@@ -1,5 +1,4 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -24,24 +23,6 @@ class Util {
     return "$firstLetter$lastLetter";
   }
 
-  static bool isJSON(String data) {
-  try {
-    json.decode(data);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-static bool isSameDay(String timestamp1, String timestamp2) {
-    final DateTime time1 = DateTime.parse(timestamp1);
-    final DateTime time2 = DateTime.parse(timestamp2);
-
-    return time1.year == time2.year &&
-        time1.month == time2.month &&
-        time1.day == time2.day;
-  }
-
   static String formatTime(BuildContext context, String timestamp) {
     final bool is24HoursFormat = MediaQuery.of(context).alwaysUse24HourFormat;
     final DateTime time = DateTime.parse(timestamp);
@@ -50,14 +31,6 @@ static bool isSameDay(String timestamp1, String timestamp2) {
 
     return formatter.format(time);
   }
-
-  static String formatTimes(BuildContext context, String timestamp) {
-  final DateTime time = DateTime.parse(timestamp);
-  final TimeOfDay timeOfDay = TimeOfDay.fromDateTime(time);
-  final MaterialLocalizations localizations = MaterialLocalizations.of(context);
-
-  return localizations.formatTimeOfDay(timeOfDay);
-}
 
 static Map<String, dynamic> convertJsonToUserInfo(Map<String, dynamic> jsonData) {
   List<String> tagsList = List<String>.from(jsonData['tags']);
