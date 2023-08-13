@@ -24,6 +24,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         password: password,
       );
 
+      userCredential.uuid
+
     } catch (e) {
       // User registration failed
       // Handle the error or display an error message to the user

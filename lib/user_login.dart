@@ -5,6 +5,7 @@ import 'package:collabio/user_registeration.dart';
 import 'package:collabio/util.dart';
 import 'package:collabio/project_page.dart';
 import 'package:collabio/network_handler.dart';
+import 'package:collabio/password_reset_screen.dart';
 
 class LoginScreen extends StatefulWidget {
 
@@ -103,74 +104,88 @@ Widget build(BuildContext context) {
     appBar: AppBar(
       title: const Text('Login'),
     ),
-    body: Container(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          children: <Widget>[
-            TextFormField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
+    resizeToAvoidBottomInset: false, // Prevents the keyboard from causing overflow
+    body: SingleChildScrollView(
+      child: Container(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: <Widget>[
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                ),
+                validator: (value) {
+                  if (value!.isEmpty) {
+                    return 'Please enter your email address';
+                  }
+                  return null;
+                },
               ),
-              validator: (value) {
-                if (value!.isEmpty) {
-                  return 'Please enter your email address';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16.0),
-            TextFormField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
+              const SizedBox(height: 16.0),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                ),
+                validator: (value) {
+                  if (value!.isEmpty) {
+                    return 'Please enter a password';
+                  }
+                  return null;
+                },
               ),
-              validator: (value) {
-                if (value!.isEmpty) {
-                  return 'Please enter a password';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  String email = _emailController.text.trim();
-                  String password = _passwordController.text;
-                  loginUser(email, password);
-                }
-              },
-              child: const Text('Login'),
-            ),
-            const SizedBox(height: 16.0),
-            Column(
-              children: [
-                const Text(
-                  "Don't yet have an account?",
-                  style: TextStyle(
-                    fontSize: 16.0,
+              const SizedBox(height: 16.0),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    String email = _emailController.text.trim();
+                    String password = _passwordController.text;
+                    loginUser(email, password);
+                  }
+                },
+                child: const Text('Login'),
+              ),
+              const SizedBox(height: 16.0),
+              Column(
+                children: [
+                  const Text(
+                    "Don't yet have an account?",
+                    style: TextStyle(
+                      fontSize: 16.0,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8.0),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RegistrationScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text('Create Account'),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(height: 8.0),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RegistrationScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text('Create Account'),
+                  ),
+                ],
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PasswordResetScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Forgot Password?'),
+              ),
+            ],
+          ),
         ),
       ),
     ),
