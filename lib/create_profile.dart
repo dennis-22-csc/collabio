@@ -69,32 +69,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
           context,
           MaterialPageRoute(builder: (context) => const MyProjectPage()),
         );
-      });
+   });
     }
   }
 
 
   Future<void> _createProfile() async {
-    String firstName = _firstNameController.text;
-    String lastName = _lastNameController.text;
-    String about = _aboutController.text;
-    String? email = _email;
-    late String msg;
-    late String title;
+  WidgetsBinding.instance.focusManager.primaryFocus?.unfocus();
+  String firstName = _firstNameController.text;
+  String lastName = _lastNameController.text;
+  String about = _aboutController.text;
+  String? email = _email;
+  late String msg;
+  late String title;
 
-    if (firstName.isNotEmpty &&
-        lastName.isNotEmpty &&
-        about.isNotEmpty && _selectedTags.isNotEmpty &&
-        _profilePicture != null) {
-      String result = await Util.saveProfileInformation(
-          firstName: firstName,
-          lastName: lastName,
-          about: about,
-          email: email!,
-          tags: _selectedTags,
-        );
-      if (result == "User inserted successfully.") {
-        try {
+  if (firstName.isNotEmpty &&
+      lastName.isNotEmpty &&
+      about.isNotEmpty &&
+      _selectedTags.isNotEmpty &&
+      _profilePicture != null) {
+    String result = await Util.saveProfileInformation(
+      firstName: firstName,
+      lastName: lastName,
+      about: about,
+      email: email!,
+      tags: _selectedTags,
+    );
+    if (result == "User inserted successfully.") {
+      try {
         // Save data to shared preferences after successful remote save
         Map<String, dynamic> userInfo = {
           'firstName': firstName,
@@ -103,69 +105,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'tags': _selectedTags,
         };
         await SharedPreferencesUtil.setUserInfo(userInfo);
-        
+
         // Save profile picture to internal storage
         await Util.saveProfilePicture(_profilePicture!);
         await SharedPreferencesUtil.setHasProfile(true);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text("Success"),
-              content: const Text("Profile created successfully."),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const MyProjectPage()),
-                    );
-                  },
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          },
-        );
-        });
         msg = "Profile created successfully";
         title = "Success";
       } catch (e) {
         msg = 'Error $e.toString()';
         title = "Error";
       }
-      } else {
-        msg = "Failed to create profile $result";
-        title = "Error";
-      }
     } else {
-      msg = 'Please fill in all the required fields including selecting a profile picture.';
+      msg = "Failed to create profile $result";
       title = "Error";
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      showCustomDialog(context, title, msg);
-    });
+  } else {
+    msg = 'Please fill in all the required fields including uploading a profile picture.';
+    title = "Error";
   }
-
-  void showCustomDialog(BuildContext context, String title, String text) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(text),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
+  showStatusDialog(title, msg);
   }
 
   @override
@@ -243,8 +201,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Expanded(
                     child: TextFormField(
                       decoration: const InputDecoration(
-                        hintText: 'Enter technologies/languages/frameworks/skills',
-                        labelText: 'Technologies/Languages/Frameworks/Skills',
+                        hintText: 'Enter skills',
+                        labelText: 'Skills',
                       ),
                       controller: _tagController,
                       onFieldSubmitted: (value) {
@@ -255,7 +213,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   IconButton(
                     icon: const Icon(Icons.add),
                     onPressed: () {
+                      if (_tagController.text.isNotEmpty){
                       _addTag(_tagController.text);
+                      }
                     },
                   ),
                 ],
@@ -268,12 +228,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   itemCount: _selectedTags.length,
                   itemBuilder: (BuildContext context, int index) {
                     String technology = _selectedTags[index];
-                    return Chip(
+                    return Padding (
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Chip(
                       label: Text(technology),
                       deleteIcon: const Icon(Icons.cancel),
                       onDeleted: () {
                         _removeTag(technology);
                       },
+                    ),
                     );
                   },
                 ),
@@ -287,5 +250,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-}
 
+  void showStatusDialog(String title, String content){
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Hey Chief'),
+          content: Text(content),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                 Navigator.of(context).pop();
+                if (title == "Success") {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MyProjectPage()),
+                  );
+                }
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
