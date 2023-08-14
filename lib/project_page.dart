@@ -10,8 +10,6 @@ import 'package:collabio/post_project.dart';
 import 'package:collabio/inbox_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:collabio/model.dart';
-import 'package:collabio/database.dart';
-import 'package:collabio/network_handler.dart';
 
 class MyProjectPage extends StatefulWidget {
   
@@ -42,7 +40,6 @@ class _MyProjectPageState extends State<MyProjectPage> {
     _email = user.email;
     getProfileStatus();
     loadProfileContent();
-    loadMessages();
     getSkills();
     }
 
@@ -58,32 +55,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
       }
     }
   }
-  void loadMessages() async {
-    dynamic messageResult = await fetchMessagesFromApi(_email!);
-    if (messageResult is List<Message>) {
-        await DatabaseHelper.insertMessages(messageResult);
-    }
-
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        //Get initial messages from local database
-        final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-        messagesModel.updateGroupedMessages(_email!);
-
-        //Set up web socket for new messages
-        await connectToSocket(messagesModel, _email!);
-
-        // Resend unsent messages
-        final messages = await DatabaseHelper.getUnsentMessages();
-        if (messages.isNotEmpty) {
-          for (var message in messages) {
-            await sendMessageData(messagesModel, message, _email!);
-          }
-        }
-        
-      });
-
-  }
-
+  
   void getSkills() async {
     List<String> myTags = (await SharedPreferencesUtil.getTags()) ?? ["mobile app development", "web development"];
     setState(() {

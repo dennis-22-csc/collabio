@@ -45,23 +45,42 @@ class _MyAppState extends State<MyApp> {
   bool _errorOccurred = false;
   String _errorMessage = "null";
   User? user;
+  String? _email;
   late ThemeData appTheme;
+  late FirebaseAuth _auth;
 
   @override
   void initState() {
     super.initState();
-    initializeFirebase().then((_) {
-      if (mounted) {
-        setState(() {
-          user = FirebaseAuth.instance.currentUser;
-        });
-      }
-    });
-    checkIsLoggedOut();
-    initDatabase();
-    fetchApiData(); 
+    initializeFirebaseAndLoadData();
   }
 
+  Future<void> initializeFirebaseAndLoadData() async {
+    await initializeFirebase();
+    if (mounted) {
+      setState(() {
+        _auth = FirebaseAuth.instance;
+      });
+      await checkIsLoggedOut();
+      loadData();
+    }
+  }
+
+  Future<void> loadData() async {
+    if (_auth.currentUser != null) {
+      await _auth.currentUser!.reload();
+      setState(() {
+        user = _auth.currentUser;
+      });
+      _setEmail();
+      initDatabase();
+      fetchApiData();
+    } else {
+      setState(() {
+        _fetchCompleted = true;
+      });
+    }
+  }
   Future<void> checkIsLoggedOut() async {
     bool loggedOut = await SharedPreferencesUtil.isLoggedOut();
     setState(() {
@@ -84,6 +103,15 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  Future<void> _setEmail() async {
+    if (user != null) {
+      if (user?.email != null) {
+        setState(() {
+          _email = user?.email;
+        });
+      }
+    }
+  }
 
   Future<void> fetchApiData() async {
     try {
@@ -100,6 +128,35 @@ class _MyAppState extends State<MyApp> {
       } else {
         _showError(projectResult);
         return;
+      }
+
+      if (user != null && _email != null) {
+        dynamic messageResult = await fetchMessagesFromApi(_email!);
+        if (messageResult is List<Message>) {
+            await DatabaseHelper.insertMessages(messageResult);
+        } else {
+          _showError(messageResult);
+          return;
+        }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          //Get initial messages from local database
+          final messagesModel = Provider.of<MessagesModel>(context, listen: false);
+          messagesModel.updateGroupedMessages(_email!);
+
+          //Set up web socket for new messages
+          await connectToSocket(messagesModel, _email!);
+
+          // Resend unsent messages
+          final messages = await DatabaseHelper.getUnsentMessages();
+          if (messages.isNotEmpty) {
+            for (var message in messages) {
+              await sendMessageData(messagesModel, message, _email!);
+            }
+          }
+        
+        });
+
       }
 
       if (receivedMessageIds.isNotEmpty) {
@@ -144,7 +201,7 @@ class _MyAppState extends State<MyApp> {
 
     return MaterialApp(
       theme: appTheme,
-      home: buildReloadFutureBuilder(),
+      home: buildMainScreen(),
     );
   }
 
@@ -185,7 +242,7 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  Widget buildReloadFutureBuilder() {
+  /*Widget buildReloadFutureBuilder() {
     if (user == null) {
       if (isLoggedOut == true) {
         // user has an account, but logged out
@@ -197,7 +254,7 @@ class _MyAppState extends State<MyApp> {
 
     } else {
       return FutureBuilder<void>(
-        future: user?.reload(),
+        future: _reloadUser(),
         builder: (BuildContext context, AsyncSnapshot<void> reloadSnapshot) {
           if (reloadSnapshot.connectionState == ConnectionState.waiting) {
             // Reloading user data, show loading indicator
@@ -239,6 +296,29 @@ class _MyAppState extends State<MyApp> {
         },
       );
     }
+  }*/
+
+  Widget buildMainScreen() {
+    if (user == null) {
+      if (isLoggedOut == true) {
+        // user has an account, but logged out
+        return const LoginScreen();
+      } else {
+        // User doesn't have an account, show registration screen
+        return const RegistrationScreen();
+      }
+    }
+    else {
+      if (user?.email == null) {
+        // User has been deleted, show the registration screen
+        return const RegistrationScreen();
+      } else if (user?.emailVerified == false) {
+        // User is not verified, show the login screen
+        return const LoginScreen();
+      } else {
+        // User exists, is logged in, and verified, show the project page
+        return const MyProjectPage();
+      }
+    }
   }
-   
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:collabio/user_login.dart';
+import 'package:collabio/email_verification.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({Key? key}) : super(key: key);
@@ -23,26 +24,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         email: email,
         password: password,
       );
-
-    } catch (e) {
-      // User registration failed
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Registration Failed'),
-            content: Text('Error: $e'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
+      showStatusDialog('Success in registeration', 'Please verify email');
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        showStatusDialog('Success in re-registeration', 'Please login with new password');
+      } else {
+        // User registration failed
+        showStatusDialog('Error in registeration', '$e');
+      }     
     }
   }
 
@@ -61,7 +50,9 @@ Widget build(BuildContext context) {
     appBar: AppBar(
       title: const Text('User Registration'),
     ),
-    body: Padding(
+    resizeToAvoidBottomInset: false,
+    body: SingleChildScrollView(
+      child: Padding(
       padding: const EdgeInsets.all(16.0),
       child: Form(
         key: _formKey,
@@ -129,7 +120,33 @@ Widget build(BuildContext context) {
         ),
       ),
     ),
-  );
+  ));
 }
+
+void showStatusDialog(String title, String content){
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(content),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                if (title == 'Success in registeration') {
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => EmailVerificationScreen.withUser(user: userCredential!.user), ),);
+                } else if (title == 'Success in re-registeration') {
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen() ),);
+                }else {
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
 }

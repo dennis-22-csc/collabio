@@ -145,7 +145,7 @@ void main() async {
     "sender_email": "alimatsadiat@gmail.com",
     "receiver_name": "Dennis Akpotaire",
     "receiver_email": "dennisthebusinessguru@gmail.com",
-    "message": "Xup Dennis.",
+    "message": "Xup Dennis boy.",
     "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
     "status": "pending",

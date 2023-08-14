@@ -6,6 +6,9 @@ import 'package:collabio/util.dart';
 import 'package:collabio/project_page.dart';
 import 'package:collabio/network_handler.dart';
 import 'package:collabio/password_reset_screen.dart';
+import 'package:collabio/database.dart';
+import 'package:collabio/model.dart';
+import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
 
@@ -21,6 +24,19 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final _auth = FirebaseAuth.instance;
   bool hasProfile = false; 
+  bool isLoggedOut = false;
+  bool _login = false;
+  bool _fetchCompleted = false;
+  bool _errorOccurred = false;
+  String _errorMessage = "null";
+  late ThemeData appTheme;
+
+
+  @override
+  void initState() {
+    super.initState();
+    initDatabase();
+  }
 
   Future<void> loginUser(String email, String password) async {
     try {
@@ -36,15 +52,11 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         }
         SharedPreferencesUtil.setLoggedOut(false);
-        // User login successful and email verified, show project page
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-              builder: (context) => const MyProjectPage(),
-          ),
-          );
-        });
+        setState(() {
+        _login = true;
+      });
+        // Fetch dependencies
+        await fetchApiData(userCredential.user!, email);
       } else {
         // User registration successful but not yet verified, navigate to email verification screen
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -57,7 +69,6 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     } on FirebaseAuthException catch (e) {
-      // User login failed
       String message;
       if (e.code == 'invalid-email') {
         message = 'The email address is invalid.';
@@ -70,24 +81,77 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         message = 'Authentication error';
       }
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Login Failed'),
-            content: Text(message),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
+      _showError(message);
     }
+  }
+
+  Future<void> fetchApiData(User user, String email) async {
+    try {
+      final projectResult = await fetchProjectsFromApi();
+      final List<String> receivedMessageIds = await DatabaseHelper.getMessageIdsWithStatus("received");
+
+      if (projectResult is List<Project>) {
+        await DatabaseHelper.insertProjects(projectResult);
+        List<String> tags = (await SharedPreferencesUtil.getTags()) ?? ["mobile app development", "web development"];
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
+          projectsModel.updateProjects(tags, 10);
+        });
+      } else {
+        _showError(projectResult);
+        return;
+      }
+
+      
+      dynamic messageResult = await fetchMessagesFromApi(email);
+      if (messageResult is List<Message>) {
+        await DatabaseHelper.insertMessages(messageResult);
+      } else {
+        _showError(messageResult);
+        return;
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        //Get initial messages from local database
+        final messagesModel = Provider.of<MessagesModel>(context, listen: false);
+        messagesModel.updateGroupedMessages(email);
+
+        //Set up web socket for new messages
+        await connectToSocket(messagesModel, email);
+
+        // Resend unsent messages
+        final messages = await DatabaseHelper.getUnsentMessages();
+        if (messages.isNotEmpty) {
+          for (var message in messages) {
+            await sendMessageData(messagesModel, message, email);
+          }
+        }
+        
+      });
+
+      if (receivedMessageIds.isNotEmpty) {
+        await deleteMessages(receivedMessageIds); 
+      }
+
+      setState(() {
+        _fetchCompleted = true;
+      });
+    } catch (error) {
+      _showError("An error occurred: $error");
+    }
+  }
+
+  void _showError(String errorMessage) {
+    setState(() {
+      _errorOccurred = true;
+      _errorMessage = errorMessage;
+      _fetchCompleted = true;
+      _login = true;
+    });
+  }
+
+  Future<void> initDatabase() async {
+    await DatabaseHelper.initDatabase();
   }
 
   @override
@@ -97,13 +161,44 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  
+
+  
+
   @override
 Widget build(BuildContext context) {
+  appTheme = ThemeData(
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      useMaterial3: true,
+    );
+
+  if (!_login) {
+    return MaterialApp(
+      theme: appTheme,
+      home: buildLoginScreen(),
+    );
+  }
+  if (!_fetchCompleted) {
+      return _buildLoadingIndicator();
+    }
+
+    if (_errorOccurred) {
+      return _buildErrorScreen();
+    }
+
+    return MaterialApp(
+      theme: appTheme,
+      home: const MyProjectPage(),
+    );
+  
+}
+
+Widget buildLoginScreen() {
   return Scaffold(
     appBar: AppBar(
       title: const Text('Login'),
     ),
-    resizeToAvoidBottomInset: false, // Prevents the keyboard from causing overflow
+    resizeToAvoidBottomInset: false,
     body: SingleChildScrollView(
       child: Container(
         padding: const EdgeInsets.all(16.0),
@@ -190,5 +285,47 @@ Widget build(BuildContext context) {
     ),
   );
 }
+
+Widget _buildLoadingIndicator() {
+    return MaterialApp(
+      theme: appTheme,
+      home: Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor:
+                AlwaysStoppedAnimation<Color>(appTheme.colorScheme.onPrimary),
+            backgroundColor: appTheme.colorScheme.onBackground,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorScreen() {
+    return MaterialApp(
+      theme: appTheme,
+      home: Scaffold(
+        body: Center(
+          child: AlertDialog(
+            title: const Text('Error'),
+            content: Text(_errorMessage),
+            actions: [
+              TextButton(
+                onPressed: () {
+                 setState(() {
+                  _errorOccurred = false;
+                  _fetchCompleted = false;
+                  _login = false;
+                });
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 
 }
