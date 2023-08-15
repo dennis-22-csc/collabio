@@ -151,7 +151,7 @@ void main() async {
     "status": "pending",
   };
 
-/*final project1 = {
+final project1 = {
     'title': 'Build a Social Networking Platform',
     'timestamp': DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
@@ -170,7 +170,8 @@ If you are interested in joining this exciting project, please get in touch with
     ''',
     'tags': ['Web Development', 'Social Networking', 'Frontend', 'Backend'],
     'poster_name': 'Rachel',
-    'poster_email': 'racheloniga@gmail.com'
+    'poster_email': 'racheloniga@gmail.com',
+    'poster_about': 'A programmer',
 };
 
 final project2 = {
@@ -194,7 +195,8 @@ If you are passionate about education and technology, please reach out to me to 
     ''',
     'tags': ['Web Development', 'Education', 'Online Learning', 'Video Streaming'],
     'poster_name': 'Alimat',
-    'poster_email': 'alimatsadiat@gmail.com'
+    'poster_email': 'alimatsadiat@gmail.com',
+    'poster_about': 'A developer',
 };
 
 final project3 = {
@@ -218,8 +220,9 @@ If you are interested in contributing to this app and helping people achieve the
     ''',
     'tags': ['Mobile App Development', 'Personal Finance', 'iOS', 'Android'],
     'poster_name': 'Ola',
-    'poster_email': 'olasmith@gmail.com'
-};*/
+    'poster_email': 'olasmith@gmail.com',
+    'poster_about': 'A designer',
+};
 
 final projectData = [ {
     "project_id": const Uuid().v4(),
@@ -241,7 +244,8 @@ If you are interested in joining this exciting project, please get in touch with
     ''',
     'tags': ['Web Development', 'Social Networking', 'Frontend', 'Backend'],
     'poster_name': 'Rachel',
-    'poster_email': 'racheloniga@gmail.com'
+    'poster_email': 'racheloniga@gmail.com',
+    'poster_about': 'A programmer',
 } , {
     "project_id": const Uuid().v4(),
     'title': 'Build Online Course Platform',
@@ -264,7 +268,8 @@ If you are passionate about education and technology, please reach out to me to 
     ''',
     'tags': ['Web Development', 'Education', 'Online Learning', 'Video Streaming'],
     'poster_name': 'Alimat',
-    'poster_email': 'alimatsadiat@gmail.com'
+    'poster_email': 'alimatsadiat@gmail.com',
+    'poster_about': 'A developer',
 }, {
     "project_id": const Uuid().v4(),
     'title': 'Build a Personal Finance Mobile App',
@@ -287,14 +292,16 @@ If you are interested in contributing to this app and helping people achieve the
     ''',
     'tags': ['Mobile App Development', 'Personal Finance', 'iOS', 'Android'],
     'poster_name': 'Ola',
-    'poster_email': 'olasmith@gmail.com'
+    'poster_email': 'olasmith@gmail.com',
+    'poster_about': 'A designer',
 }
 ];
- final messageResponse = await dataSender.sendMessageData(message);
- print(messageResponse);
+
+ //final messageResponse = await dataSender.sendMessageData(message);
+ //print(messageResponse);
   
-  //final projectResponse = await dataSender.createNewProject(project3);
-  //print('Project response: $projectResponse');
+  final projectResponse = await dataSender.createNewProject(project2);
+  print('Project response: $projectResponse');
 
   //final userResponse = await dataSender.fetchUserInfoFromApi("denniskoko@gmail.com");
   //print('User Response: $userResponse');

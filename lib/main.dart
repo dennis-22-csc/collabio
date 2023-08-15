@@ -134,6 +134,7 @@ class _MyAppState extends State<MyApp> {
         return;
       }
 
+      
       if (user != null && _email != null) {
         dynamic messageResult = await fetchMessagesFromApi(_email!);
         if (messageResult is List<Message>) {

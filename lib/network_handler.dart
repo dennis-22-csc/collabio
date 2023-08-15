@@ -330,6 +330,7 @@ Future<String> connectToSocket(MessagesModel messagesModel, String currentUserEm
     late String msg;
     IO.Socket? socket;
     Set<String> receivedMessageIds = {};
+    Set<String> receivedProjectIds = {};
 
     try {
       socket = IO.io('http://collabio.denniscode.tech', <String, dynamic>{
@@ -347,6 +348,16 @@ Future<String> connectToSocket(MessagesModel messagesModel, String currentUserEm
           receivedMessageIds.add(messageId);
         }
       });
+
+      socket.on('new_project', (data) {
+        final project = jsonDecode(data);
+        final projectId = project['project_id'];
+        if (!receivedProjectIds.contains(projectId)) {
+          DatabaseHelper.insertProject(project);
+          receivedProjectIds.add(projectId);
+        }
+      });
+
 
       msg = "Connection successful";
     } catch (error) {

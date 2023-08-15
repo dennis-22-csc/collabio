@@ -140,7 +140,7 @@ static Future<bool> deleteMessage(String messageId) async {
 static Future<void> insertProject(Map<String, dynamic> jsonData) async { 
   Database db = await _database; 
   final Project project = Project.fromMap(jsonData);
-  await db.insert(_projectsTable, project.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
+  await db.insert(_projectsTable, project.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
 }
 
 

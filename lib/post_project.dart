@@ -19,20 +19,23 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
   final List<String> _selectedTags = [];
   String? _email;
   String? _name;
+  String? _about;
 
   @override
   void initState() {
     super.initState();
     User user = FirebaseAuth.instance.currentUser!; 
     _email = user.email; 
-    fetchName();
+    setPosterDetails();
   }
 
-  Future<void> fetchName() async {
+  Future<void> setPosterDetails() async {
     String fName = (await SharedPreferencesUtil.getFirstName()) ?? '';
     String lName = (await SharedPreferencesUtil.getLastName()) ?? '';
+    String about = (await SharedPreferencesUtil.getAbout()) ?? '';
     setState(() {
       _name = '$fName $lName';
+      _about = about;
     });
   }
 
@@ -66,6 +69,7 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
         'tags': _selectedTags,
         'poster_name': _name,
         'poster_email': _email,
+        'poster_about': _about,
       };
 
         // Send project
@@ -177,12 +181,15 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
                   itemCount: _selectedTags.length,
                   itemBuilder: (BuildContext context, int index) {
                     String tag = _selectedTags[index];
-                    return Chip(
+                    return Padding (
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Chip(
                       label: Text(tag),
                       deleteIcon: const Icon(Icons.cancel),
                       onDeleted: () {
                         _removeTag(tag);
                       },
+                    )
                     );
                   },
                 ),
