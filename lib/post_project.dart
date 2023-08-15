@@ -58,7 +58,6 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
       String projectTitle = _projectTitleController.text;
       String projectDescription = _projectDescriptionController.text;
       DateTime currentTime = DateTime.now();
-      String? title;
       String? result;
 
       // Prepare the data to be sent to the remote URL
@@ -75,32 +74,10 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
         // Send project
         result = await sendProjectData(projectData);
         if (result.startsWith('Project inserted successfully.')) {
-          title = 'Success';
+          showStatusDialog("Project posted");
         } else {
-          title = 'Error';
+          showStatusDialog("Can't post projects at the moment");
         }
-      
-
-      // Show a dialog to indicate that the project has been published
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text(title!),
-            content: Text(result!),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MyProjectPage(), ), );
-                },
-              ),
-            ],
-          );
-        },
-      );
-      });
     }
   }
 
@@ -203,6 +180,26 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void showStatusDialog(String content){
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Hey Chief'),
+          content: Text(content),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MyProjectPage(), ), );
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

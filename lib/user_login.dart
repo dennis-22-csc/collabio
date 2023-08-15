@@ -141,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showError(String errorMessage) {
     setState(() {
       _errorOccurred = true;
-      _errorMessage = errorMessage;
+      _errorMessage = "Unable to fetch dependencies at the moment.";
       _fetchCompleted = true;
       _login = true;
     });
@@ -304,7 +304,7 @@ Widget _buildLoadingIndicator() {
       home: Scaffold(
         body: Center(
           child: AlertDialog(
-            title: const Text('Error'),
+            title: const Text('Hi Chief'),
             content: Text(_errorMessage),
             actions: [
               TextButton(

@@ -201,7 +201,7 @@ class _MyAppState extends State<MyApp> {
   void _showError(String errorMessage) {
     setState(() {
       _errorOccurred = true;
-      _errorMessage = errorMessage;
+      _errorMessage = "Unable to fetch dependencies at the moment.";
       _networkOperationCompleted = true;
     });
   }
@@ -253,7 +253,7 @@ class _MyAppState extends State<MyApp> {
       home: Scaffold(
         body: Center(
           child: AlertDialog(
-            title: const Text('Error'),
+            title: const Text('Hi Chief'),
             content: Text(_errorMessage),
             actions: [
               TextButton(

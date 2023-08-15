@@ -23,30 +23,14 @@ class ProfileEditDialog extends StatefulWidget {
 class _ProfileEditDialogState extends State<ProfileEditDialog> {
   
   void updateProfileContent(String email, String title, dynamic content) async {
-        String result = '';
         
-        result = await updateProfileSection(email, title, content);
+        final String result = await updateProfileSection(email, title, content);
+        if (result == "Profile section $title updated successfully") {
+          showStatusDialog("$title updated successfully");
+        } else {
+          showStatusDialog("Can't perform any profile update at the moment");
+        }
         
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-        showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            content: Text(result),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProfileSectionScreen(),)
-                  );
-                }
-              ),
-            ],
-          );
-        },
-      );
-      });
-      
   }
   
   
@@ -86,5 +70,25 @@ class _ProfileEditDialogState extends State<ProfileEditDialog> {
           ),
         ); 
     
+  }
+
+  void showStatusDialog(String content){
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Hey Chief'),
+          content: Text(content),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProfileSectionScreen(),));
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

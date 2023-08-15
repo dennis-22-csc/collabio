@@ -139,7 +139,12 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
     };
     final messagesModel = Provider.of<MessagesModel>(context, listen: false);
     final result = await sendMessageData(messagesModel, message, email!);
-    showStatusDialog(result);
+
+    if (result == "Message inserted successfully.") {
+      showStatusDialog("Message sent.");
+    } else {
+      showStatusDialog("Message not sent, will be sent when the server is reachable.");
+    }
     _messageController.clear();
   }
 

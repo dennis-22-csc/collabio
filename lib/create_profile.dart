@@ -112,11 +112,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         msg = "Profile created successfully";
         title = "Success";
       } catch (e) {
-        msg = 'Error $e.toString()';
+        //msg = 'Error $e.toString()';
+        msg = "Can't create profile at the moment";
         title = "Error";
       }
     } else {
-      msg = "Failed to create profile $result";
+      //msg = "Failed to create profile $result";
+      msg = "Can't create profile at the moment";
       title = "Error";
     }
   } else {
