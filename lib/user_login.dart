@@ -22,15 +22,12 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final _auth = FirebaseAuth.instance;
-  bool hasProfile = false; 
-  bool isLoggedOut = false;
+  final _auth = FirebaseAuth.instance; 
   bool _login = false;
   bool _fetchCompleted = false;
   bool _errorOccurred = false;
   String _errorMessage = "null";
   late ThemeData appTheme;
-
 
   @override
   void initState() {
@@ -41,6 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> loginUser(String email, String password) async {
     try {
       final userCredential = await _auth.signInWithEmailAndPassword(email: email, password: password);
+      final hasProfile = await SharedPreferencesUtil.hasProfile();
 
       if (userCredential.user?.emailVerified == true) {
         // Get and set profile info in cases where app data was cleared
@@ -102,7 +100,6 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      
       dynamic messageResult = await fetchMessagesFromApi(email);
       if (messageResult is List<Message>) {
         await DatabaseHelper.insertMessages(messageResult);

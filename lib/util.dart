@@ -245,9 +245,19 @@ class SharedPreferencesUtil {
     await prefs.setBool('hasProfile', hasProfile);
   }
 
+  static Future<void> setSentToken(bool sentToken) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('sentToken', sentToken);
+  }
+
   static Future<void> setLoggedOut(bool isLoggedOut) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedOut', isLoggedOut);
+  }
+
+  static Future<void> saveToken(String token) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('firebase_token', token);
   }
 
   static Future<void> setUserInfo(Map<String, dynamic> userInfo) async {
@@ -283,6 +293,10 @@ class SharedPreferencesUtil {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getBool('hasProfile') ?? false;
   }
+  static Future<bool> sentToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('sentToken') ?? false;
+  }
   static Future<bool> isLoggedOut() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getBool('isLoggedOut') ?? false;
@@ -311,6 +325,11 @@ class SharedPreferencesUtil {
   static Future<List<String>?> getTags() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getStringList('tags');
+  }
+
+  static Future<String> getToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('firebase_token') ?? '';
   }
 
 }

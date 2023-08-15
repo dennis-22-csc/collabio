@@ -42,14 +42,17 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _isFirebaseInitialized = false;
-  bool isLoggedOut = false;
-  bool _fetchCompleted = false;
+  bool _hasProfile = false;
+  bool _sentToken = false;
+  bool _isLoggedOut = false;
+  bool _networkOperationCompleted = false;
   bool _errorOccurred = false;
   String _errorMessage = "null";
   User? user;
   String? _email;
   late ThemeData appTheme;
   late FirebaseAuth _auth;
+  late String _token; 
 
   @override
   void initState() {
@@ -65,12 +68,15 @@ class _MyAppState extends State<MyApp> {
       });
       FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
       FirebaseMessaging.instance.subscribeToTopic('news');
-      await checkIsLoggedOut();
-      loadData();
+      FirebaseMessaging.instance.onTokenRefresh.listen((token) {
+        SharedPreferencesUtil.saveToken(token);
+      });
+      await getProfileInfo();
+      syncData();
     }
   }
 
-  Future<void> loadData() async {
+  Future<void> syncData() async {
     if (_auth.currentUser != null) {
       await _auth.currentUser!.reload();
       setState(() {
@@ -78,20 +84,28 @@ class _MyAppState extends State<MyApp> {
       });
       _setEmail();
       initDatabase();
-      fetchApiData();
+      performNetworkOperation();
     } else {
       setState(() {
-        _fetchCompleted = true;
+        _networkOperationCompleted = true;
       });
     }
   }
-  Future<void> checkIsLoggedOut() async {
+
+  Future<void> getProfileInfo() async {
+    bool myProfile = await SharedPreferencesUtil.hasProfile();
+    bool sentToken = await SharedPreferencesUtil.sentToken();
     bool loggedOut = await SharedPreferencesUtil.isLoggedOut();
+    String myToken = await SharedPreferencesUtil.getToken();
+
     setState(() {
-      isLoggedOut = loggedOut;
+      _hasProfile = myProfile;
+      _sentToken = sentToken;
+      _isLoggedOut = loggedOut;
+      _token = myToken;
     });
   }
-
+  
   Future<void> initDatabase() async {
     await DatabaseHelper.initDatabase();
   }
@@ -117,7 +131,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> fetchApiData() async {
+  Future<void> performNetworkOperation() async {
     try {
       final projectResult = await fetchProjectsFromApi();
       final List<String> receivedMessageIds = await DatabaseHelper.getMessageIdsWithStatus("received");
@@ -134,7 +148,15 @@ class _MyAppState extends State<MyApp> {
         return;
       }
 
-      
+      if(_hasProfile && !_sentToken) {
+        dynamic tokenUpdateResult = await updateTokenSection(_email!, _token);
+        if (tokenUpdateResult == "Token section updated successfully") {
+          await SharedPreferencesUtil.setSentToken(true);
+        } else {
+          await SharedPreferencesUtil.setSentToken(false);
+        }
+      } 
+
       if (user != null && _email != null) {
         dynamic messageResult = await fetchMessagesFromApi(_email!);
         if (messageResult is List<Message>) {
@@ -169,7 +191,7 @@ class _MyAppState extends State<MyApp> {
       }
 
       setState(() {
-        _fetchCompleted = true;
+        _networkOperationCompleted = true;
       });
     } catch (error) {
       _showError("An error occurred: $error");
@@ -180,7 +202,7 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _errorOccurred = true;
       _errorMessage = errorMessage;
-      _fetchCompleted = true;
+      _networkOperationCompleted = true;
     });
   }
 
@@ -196,7 +218,7 @@ class _MyAppState extends State<MyApp> {
       return _buildLoadingIndicator();
     }
 
-     if (!_fetchCompleted) {
+     if (!_networkOperationCompleted) {
       return _buildLoadingIndicator();
     }
 
@@ -247,65 +269,10 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  /*Widget buildReloadFutureBuilder() {
-    if (user == null) {
-      if (isLoggedOut == true) {
-        // user has an account, but logged out
-        return const LoginScreen();
-      } else {
-        // User doesn't have an account, show registration screen
-        return const RegistrationScreen();
-      }
-
-    } else {
-      return FutureBuilder<void>(
-        future: _reloadUser(),
-        builder: (BuildContext context, AsyncSnapshot<void> reloadSnapshot) {
-          if (reloadSnapshot.connectionState == ConnectionState.waiting) {
-            // Reloading user data, show loading indicator
-            return Scaffold(
-              body: Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(appTheme.colorScheme.onPrimary), backgroundColor: appTheme.colorScheme.onBackground,
-                    ),
-                ),
-            );
-          } else if (reloadSnapshot.hasError) {
-            // Handle reload error
-            final error = reloadSnapshot.error;
-
-              return AlertDialog(
-                  title: const Text('Error'),
-                  content: Text('An error occurred: ${error.toString()}'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('OK'),
-                    ),
-                  ],
-              );
-
-          } else {
-            // User data reload successful, check if the email is null
-            if (user?.email == null) {
-              // User has been deleted, show the registration screen
-              return const RegistrationScreen();
-            } else if (user?.emailVerified == null) {
-              // User is not verified, show the login screen
-              return const LoginScreen();
-            } else {
-              // User exists, is logged in, and verified, show the project page
-              return const MyProjectPage();
-            }
-          }
-        },
-      );
-    }
-  }*/
 
   Widget buildMainScreen() {
     if (user == null) {
-      if (isLoggedOut == true) {
+      if (_isLoggedOut == true) {
         // user has an account, but logged out
         return const LoginScreen();
       } else {

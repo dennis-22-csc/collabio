@@ -326,6 +326,43 @@ Future<String> updateProfileSection(String email, String title, dynamic content)
   return msg;
 }
 
+Future<String> updateTokenSection(String email, String token) async {
+  late String msg;
+  const String url = 'http://collabio.denniscode.tech/update_profile';
+  final Map<String, dynamic> data = {
+    'email': email,
+    'firebase_token': token,
+  };
+  
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final responseData = jsonDecode(responseBody);
+        if (responseData == "Profile updated successfully") {
+          msg = "Token section updated successfully";
+        } else {
+          msg = responseData;
+        }
+      } 
+    } else {
+      final responseText = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+      msg = 'Failed to update token section. $responseText';
+    }
+  } catch (e) {
+    msg = 'Error occurred while updating token section". $e';
+  }
+  return msg;
+}
+
 Future<String> connectToSocket(MessagesModel messagesModel, String currentUserEmail) async {
     late String msg;
     IO.Socket? socket;
