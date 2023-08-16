@@ -145,7 +145,7 @@ void main() async {
     "sender_email": "alimatsadiat@gmail.com",
     "receiver_name": "Dennis Akpotaire",
     "receiver_email": "dennisthebusinessguru@gmail.com",
-    "message": "Xup Dennis boy.",
+    "message": "Okay Dennis.",
     "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
     "status": "pending",
@@ -300,7 +300,7 @@ If you are interested in contributing to this app and helping people achieve the
  //final messageResponse = await dataSender.sendMessageData(message);
  //print(messageResponse);
   
-  final projectResponse = await dataSender.createNewProject(project2);
+  final projectResponse = await dataSender.createNewProject(project1);
   print('Project response: $projectResponse');
 
   //final userResponse = await dataSender.fetchUserInfoFromApi("denniskoko@gmail.com");

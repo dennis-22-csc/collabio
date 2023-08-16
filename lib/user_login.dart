@@ -96,7 +96,8 @@ class _LoginScreenState extends State<LoginScreen> {
           projectsModel.updateProjects(tags, 10);
         });
       } else {
-        _showError(projectResult);
+        _showError("Unable to fetch dependencies at the moment.");
+        //_showError(projectResult);
         return;
       }
 
@@ -104,7 +105,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (messageResult is List<Message>) {
         await DatabaseHelper.insertMessages(messageResult);
       } else {
-        _showError(messageResult);
+        _showError("Unable to fetch dependencies at the moment.");
+        //_showError(messageResult);
         return;
       }
 
@@ -134,14 +136,15 @@ class _LoginScreenState extends State<LoginScreen> {
         _fetchCompleted = true;
       });
     } catch (error) {
-      _showError("An error occurred: $error");
+      _showError("Unable to fetch dependencies at the moment.");
+      //_showError("An error occurred: $error");
     }
   }
 
   void _showError(String errorMessage) {
     setState(() {
       _errorOccurred = true;
-      _errorMessage = "Unable to fetch dependencies at the moment.";
+      _errorMessage = errorMessage;
       _fetchCompleted = true;
       _login = true;
     });
@@ -286,12 +289,22 @@ Widget buildLoginScreen() {
 Widget _buildLoadingIndicator() {
     return MaterialApp(
       theme: appTheme,
-      home: Scaffold(
+      home: const Scaffold(
+        backgroundColor: Color(0xFFEBDDFF),
         body: Center(
-          child: CircularProgressIndicator(
-            valueColor:
-                AlwaysStoppedAnimation<Color>(appTheme.colorScheme.onPrimary),
-            backgroundColor: appTheme.colorScheme.onBackground,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "Fetching dependencies",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 16),
+              CircularProgressIndicator(),
+            ],
           ),
         ),
       ),

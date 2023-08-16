@@ -225,7 +225,6 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
                 children: [
                   CircleAvatar(
                     radius: 80,
-                    backgroundColor: Colors.grey[300],
                     backgroundImage: profilePicture != null ? FileImage(profilePicture!) : null,
                     child: Stack(
                       children: [

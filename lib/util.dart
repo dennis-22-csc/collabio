@@ -6,8 +6,21 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:collabio/network_handler.dart';
 import 'package:collabio/model.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:collabio/firebase_options.dart';
 
 class Util {
+  static Future<bool> initializeFirebase() async {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    return true;
+  }
+  static Future<bool> checkInternetConnection() async {
+  bool isConnected = await InternetConnectionChecker().hasConnection;
+  return isConnected;
+}
   static String extractDate(String timestamp) {
   DateTime dateTime = DateTime.parse(timestamp);
   String formattedDate = "${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year}";

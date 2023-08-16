@@ -1,10 +1,8 @@
 import 'package:collabio/util.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:collabio/firebase_options.dart';
 import 'package:collabio/user_login.dart';
 import 'package:collabio/user_registeration.dart';
 import 'package:device_preview/device_preview.dart';
@@ -14,10 +12,42 @@ import 'package:collabio/database.dart';
 import 'package:collabio/model.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 
-void main() {
+void main() async {
+  late bool hasInternet;
+  late bool loggedOut;
+  String? email;
+  User? user;
+
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+            statusBarColor: Color(0xFFEBDDFF),
+  ));
+  hasInternet = await Util.checkInternetConnection();
+  loggedOut = await SharedPreferencesUtil.isLoggedOut();
 
+  if (hasInternet) {
+    await Util.initializeFirebase();
+    FirebaseAuth auth = FirebaseAuth.instance;
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    FirebaseMessaging.instance.subscribeToTopic('news');
+    FirebaseMessaging.instance.onTokenRefresh.listen((token) {
+      SharedPreferencesUtil.saveToken(token);
+    });
+
+    if (auth.currentUser != null) {
+      await auth.currentUser!.reload();
+      user = auth.currentUser;
+
+    if (user != null) {
+      if (user.email != null) {
+        email = user.email;
+      } 
+    }
+  }
+}
+     
   runApp(
     DevicePreview(
       enabled: false,
@@ -26,82 +56,64 @@ void main() {
           ChangeNotifierProvider<MessagesModel>(create: (context) => MessagesModel()),
           ChangeNotifierProvider<ProjectsModel>(create: (context) => ProjectsModel()),
         ],
-        child: MyApp(key: UniqueKey()),
+        child: MyApp(key: UniqueKey(), hasInternet: hasInternet, isLoggedOut: loggedOut, user: user, email: email,),
       ),
     ),
   );
-  
 }
 
+
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final bool hasInternet; 
+  final bool isLoggedOut;
+  final String? email;
+  final User? user;
+  const MyApp({Key? key, required this.hasInternet, required this.isLoggedOut, required this.user, required this.email }) : super(key: key);
 
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _isFirebaseInitialized = false;
   bool _hasProfile = false;
   bool _sentToken = false;
-  bool _isLoggedOut = false;
   bool _networkOperationCompleted = false;
   bool _errorOccurred = false;
   String _errorMessage = "null";
-  User? user;
-  String? _email;
+  
+ 
   late ThemeData appTheme;
-  late FirebaseAuth _auth;
   late String _token; 
-
+ 
   @override
   void initState() {
     super.initState();
-    initializeFirebaseAndLoadData();
-  }
-
-  Future<void> initializeFirebaseAndLoadData() async {
-    await initializeFirebase();
-    if (mounted) {
-      setState(() {
-        _auth = FirebaseAuth.instance;
-      });
-      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-      FirebaseMessaging.instance.subscribeToTopic('news');
-      FirebaseMessaging.instance.onTokenRefresh.listen((token) {
-        SharedPreferencesUtil.saveToken(token);
-      });
-      await getProfileInfo();
+    if (!widget.hasInternet){
+      _showError("Please turn on your internet connection.") ;
+    } else if (widget.user != null){
       syncData();
     }
   }
 
   Future<void> syncData() async {
-    if (_auth.currentUser != null) {
-      await _auth.currentUser!.reload();
-      setState(() {
-        user = _auth.currentUser;
-      });
-      _setEmail();
-      initDatabase();
-      performNetworkOperation();
-    } else {
-      setState(() {
-        _networkOperationCompleted = true;
-      });
-    }
+    await getProfileInfo();
+    await loadData();
+  }
+
+
+  Future<void> loadData() async {
+      await initDatabase();
+      await performNetworkOperation();
   }
 
   Future<void> getProfileInfo() async {
     bool myProfile = await SharedPreferencesUtil.hasProfile();
     bool sentToken = await SharedPreferencesUtil.sentToken();
-    bool loggedOut = await SharedPreferencesUtil.isLoggedOut();
     String myToken = await SharedPreferencesUtil.getToken();
 
     setState(() {
       _hasProfile = myProfile;
       _sentToken = sentToken;
-      _isLoggedOut = loggedOut;
       _token = myToken;
     });
   }
@@ -110,28 +122,8 @@ class _MyAppState extends State<MyApp> {
     await DatabaseHelper.initDatabase();
   }
 
-  Future<void> initializeFirebase() async {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-
-    setState(() {
-      _isFirebaseInitialized = true;
-
-    });
-  }
-
-  Future<void> _setEmail() async {
-    if (user != null) {
-      if (user?.email != null) {
-        setState(() {
-          _email = user?.email;
-        });
-      }
-    }
-  }
-
   Future<void> performNetworkOperation() async {
+    
     try {
       final projectResult = await fetchProjectsFromApi();
       final List<String> receivedMessageIds = await DatabaseHelper.getMessageIdsWithStatus("received");
@@ -144,12 +136,13 @@ class _MyAppState extends State<MyApp> {
           projectsModel.updateProjects(tags, 10);
         });
       } else {
-        _showError(projectResult);
+        _showError("Unable to fetch dependencies at the moment.");
+        //_showError(projectResult);
         return;
       }
 
       if(_hasProfile && !_sentToken) {
-        dynamic tokenUpdateResult = await updateTokenSection(_email!, _token);
+        dynamic tokenUpdateResult = await updateTokenSection(widget.email!, _token);
         if (tokenUpdateResult == "Token section updated successfully") {
           await SharedPreferencesUtil.setSentToken(true);
         } else {
@@ -157,28 +150,29 @@ class _MyAppState extends State<MyApp> {
         }
       } 
 
-      if (user != null && _email != null) {
-        dynamic messageResult = await fetchMessagesFromApi(_email!);
+      if (widget.user != null && widget.email != null) {
+        dynamic messageResult = await fetchMessagesFromApi(widget.email!);
         if (messageResult is List<Message>) {
             await DatabaseHelper.insertMessages(messageResult);
         } else {
-          _showError(messageResult);
+          _showError("Unable to fetch dependencies at the moment.");
+          //_showError(messageResult);
           return;
         }
 
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           //Get initial messages from local database
           final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-          messagesModel.updateGroupedMessages(_email!);
+          messagesModel.updateGroupedMessages(widget.email!);
 
           //Set up web socket for new messages
-          await connectToSocket(messagesModel, _email!);
+          await connectToSocket(messagesModel, widget.email!);
 
           // Resend unsent messages
           final messages = await DatabaseHelper.getUnsentMessages();
           if (messages.isNotEmpty) {
             for (var message in messages) {
-              await sendMessageData(messagesModel, message, _email!);
+              await sendMessageData(messagesModel, message, widget.email!);
             }
           }
         
@@ -194,14 +188,15 @@ class _MyAppState extends State<MyApp> {
         _networkOperationCompleted = true;
       });
     } catch (error) {
-      _showError("An error occurred: $error");
+      _showError("Unable to fetch dependencies at the moment.");
+      //_showError("An error occurred: $error");
     }
   }
 
   void _showError(String errorMessage) {
     setState(() {
       _errorOccurred = true;
-      _errorMessage = "Unable to fetch dependencies at the moment.";
+      _errorMessage = errorMessage;
       _networkOperationCompleted = true;
     });
   }
@@ -214,33 +209,67 @@ class _MyAppState extends State<MyApp> {
       useMaterial3: true,
     );
 
-    if (!_isFirebaseInitialized) {
-      return _buildLoadingIndicator();
-    }
-
-     if (!_networkOperationCompleted) {
-      return _buildLoadingIndicator();
-    }
-
     if (_errorOccurred) {
       return _buildErrorScreen();
+    }
+    
+    if (widget.user == null) {
+      if (widget.isLoggedOut == true) {
+        // user has an account, but logged out
+        return MaterialApp(
+      theme: appTheme,
+      home: const LoginScreen());
+      } else {
+        // User doesn't have an account, show registration screen
+        return MaterialApp(
+      theme: appTheme,
+      home: const RegistrationScreen());
+      }
+    }
+    else {
+      if (widget.user?.email == null) {
+        // User has been deleted, show the registration screen
+        return MaterialApp(
+      theme: appTheme,
+      home: const RegistrationScreen());
+      } else if (widget.user?.emailVerified == false) {
+        // User is not verified, show the login screen
+        return MaterialApp(
+      theme: appTheme,
+      home: const LoginScreen());
+      }
+    }
+
+    if (!_networkOperationCompleted) {
+      return _buildLoadingIndicator();
     }
 
     return MaterialApp(
       theme: appTheme,
-      home: buildMainScreen(),
+      home: const MyProjectPage(),
     );
+    
   }
 
   Widget _buildLoadingIndicator() {
     return MaterialApp(
       theme: appTheme,
-      home: Scaffold(
+      home: const Scaffold(
+        backgroundColor: Color(0xFFEBDDFF),
         body: Center(
-          child: CircularProgressIndicator(
-            valueColor:
-                AlwaysStoppedAnimation<Color>(appTheme.colorScheme.onPrimary),
-            backgroundColor: appTheme.colorScheme.onBackground,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "Fetching dependencies",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 16),
+              CircularProgressIndicator(),
+            ],
           ),
         ),
       ),
@@ -269,28 +298,4 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-
-  Widget buildMainScreen() {
-    if (user == null) {
-      if (_isLoggedOut == true) {
-        // user has an account, but logged out
-        return const LoginScreen();
-      } else {
-        // User doesn't have an account, show registration screen
-        return const RegistrationScreen();
-      }
-    }
-    else {
-      if (user?.email == null) {
-        // User has been deleted, show the registration screen
-        return const RegistrationScreen();
-      } else if (user?.emailVerified == false) {
-        // User is not verified, show the login screen
-        return const LoginScreen();
-      } else {
-        // User exists, is logged in, and verified, show the project page
-        return const MyProjectPage();
-      }
-    }
-  }
 }

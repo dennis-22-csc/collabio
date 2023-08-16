@@ -94,14 +94,12 @@ class _MyProjectPageState extends State<MyProjectPage> {
 
   @override
   Widget build(BuildContext context) {
-    //var scaffoldKey = GlobalKey<ScaffoldState>();
-    List<Widget> drawerOptions = [
+  List<Widget> drawerOptions = [
   if (hasProfile)
     UserAccountsDrawerHeader(
       accountName: Text(name!),
       accountEmail: Text(_email!),
       currentAccountPicture: CircleAvatar(
-        backgroundColor: Colors.white,
         backgroundImage: profilePicture != null ? FileImage(profilePicture!) : null,
         child: profilePicture == null ? const Icon(Icons.person) : null,
       ),

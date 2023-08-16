@@ -76,13 +76,11 @@ class _InboxScreenState extends State<InboxScreen> {
   return ListTile(
   leading: CircleAvatar(
     radius: 20,
-    backgroundColor: Colors.blue,
     child: Text(
       Util.getLetters(otherPartyName),
       style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
       ),
     ),
   ),
