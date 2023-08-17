@@ -11,6 +11,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:collabio/firebase_options.dart';
 
 class Util {
+  static String formatToOneLine(String message) {
+    return message.replaceAllMapped(RegExp(r'(?<=[.!?])\s+'), (match) {
+            return ' ';
+          }).trim();
+  }
   static Future<bool> initializeFirebase() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,

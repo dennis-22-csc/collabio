@@ -300,8 +300,8 @@ If you are interested in contributing to this app and helping people achieve the
  //final messageResponse = await dataSender.sendMessageData(message);
  //print(messageResponse);
   
-  final projectResponse = await dataSender.createNewProject(project1);
-  print('Project response: $projectResponse');
+  //final projectResponse = await dataSender.createNewProject(project1);
+  //print('Project response: $projectResponse');
 
   //final userResponse = await dataSender.fetchUserInfoFromApi("denniskoko@gmail.com");
   //print('User Response: $userResponse');

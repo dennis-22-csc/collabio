@@ -98,13 +98,23 @@ class _InboxScreenState extends State<InboxScreen> {
       _buildTimestamp(mostRecentMessage.timestamp),
     ],
   ),
-  subtitle: Text(
-    mostRecentMessage.message,
-    maxLines: 1,
-    overflow: TextOverflow.ellipsis,
-    style: const TextStyle(
-      fontSize: 16,
-    ),
+  subtitle: Row (
+    children: [
+      Expanded(
+        flex: 1,
+        child: Text(
+          Util.formatToOneLine(mostRecentMessage.message),
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 16,
+          ),
+        ),
+      ),
+      Flexible(
+        flex: 0,
+        child: buildMessageStatusIcon(mostRecentMessage.status),
+      )
+    ],
   ),
   onTap: () {
     Navigator.push(
@@ -147,6 +157,34 @@ Widget _buildTimestamp(String timestamp) {
       );
 }
 
+
+Widget buildMessageStatusIcon(String status) {
+  switch (status) {
+    case 'sent':
+      return const Row(
+        children: [
+          SizedBox(width: 4.0),
+          Icon(Icons.check, color: Colors.blue, size: 15),
+        ],
+      );
+    case 'pending':
+      return const Row(
+        children: [
+          SizedBox(width: 4.0),
+          Icon(Icons.schedule, color: Colors.grey, size: 15),
+        ],
+      );
+    case 'failed':
+      return const Row(
+        children: [
+          SizedBox(width: 4.0),
+          Icon(Icons.error, color: Colors.red, size: 15),
+        ],
+      );
+    default:
+      return const SizedBox.shrink();
+  }
+}
 
 
 
