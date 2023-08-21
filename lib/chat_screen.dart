@@ -5,6 +5,7 @@ import 'package:collabio/util.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 
 class ChatScreen extends StatelessWidget {
   final String currentUserName;
@@ -31,6 +32,12 @@ class ChatScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              context.pop();
+            },
+          ),
         title: Text(otherPartyName),
       ),
       body: Column(
@@ -194,8 +201,10 @@ String _getSeparatorText(String timestamp) {
         IconButton(
           icon: const Icon(Icons.send),
           onPressed: () {
-            _sendMessage(context, textController.text);
-            textController.clear();
+            if (textController.text.trim().isNotEmpty) {
+              textController.clear();
+              _sendMessage(context, textController.text.trim());
+            } 
           },
         ),
       ],

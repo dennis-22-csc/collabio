@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:collabio/model.dart';
 import 'package:collabio/network_handler.dart';
 import 'package:collabio/util.dart';
-import 'package:collabio/create_profile.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:collabio/inbox_screen.dart';
+import 'package:go_router/go_router.dart';
 
 
 class ViewProjectScreen extends StatefulWidget {
   final Project project;
+
+
   const ViewProjectScreen({
     Key? key,
     required this.project,
@@ -24,43 +25,35 @@ class ViewProjectScreen extends StatefulWidget {
 }
 class _ViewProjectScreenState extends State<ViewProjectScreen> {
   final TextEditingController _messageController = TextEditingController();
-  String? name;
   String? email;
-  bool hasProfile = false;
-
+  late ProfileInfoModel _profileInfoModel;
 
   @override
   void initState() {
     super.initState();
     User user = FirebaseAuth.instance.currentUser!; 
-    email = user.email; 
-    loadNames();
-    getProfileStatus();
+    email = user.email;
+    getProfileModel();
   }
 
-  void loadNames() async {
-    String fName = (await SharedPreferencesUtil.getFirstName()) ?? '';
-    String lName = (await SharedPreferencesUtil.getLastName()) ?? '';
+Future<void> getProfileModel() async {
+    final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
+  
     setState(() {
-      name = '$fName $lName';
-    });
-  }
-
-  void getProfileStatus() async {
-    bool myProfile = await SharedPreferencesUtil.hasProfile();
-    setState(() {
-      hasProfile = myProfile;
+      _profileInfoModel = profileInfoModel;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
+  
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context);
+            context.pop();
           },
         ),
         title: const Text('Project Details'),
@@ -107,8 +100,10 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
               alignment: Alignment.center,
               child: ElevatedButton(
                 onPressed: () {
-                  if (hasProfile) {
+                  if (profileInfoModel.hasProfile! && email != widget.project.posterEmail) {
                     _showMessageDialog(context);
+                  } else if (email == widget.project.posterEmail) {
+                    showErrorDialog("You can't message yourself");
                   } else {
                     showProfileDialog("You can't message the poster without creating a profile.");
                   }
@@ -128,11 +123,11 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
     
     final message = {
       "message_id": const Uuid().v4(),
-      "sender_name": name,
+      "sender_name": _profileInfoModel.name,
       "sender_email": email,
       "receiver_name": widget.project.posterName,
       "receiver_email": widget.project.posterEmail,
-      "message": _messageController.text,
+      "message": _messageController.text.trim(),
       "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
       "status": "pending",
@@ -162,7 +157,7 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () {
-                Navigator.of(context).pop();
+                context.pop();
               },
             ),
             title: Text('Message ${widget.project.posterName}'),
@@ -187,7 +182,11 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: ElevatedButton(
-                  onPressed: _sendMessage,
+                  onPressed: () {
+                    if (_messageController.text.trim().isNotEmpty) {
+                      _sendMessage();
+                    }
+                  },
                   child: const Text('Send'),
                 ),
               ),
@@ -203,15 +202,12 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Hey Chief'),
+          title: const Text('Hi there'),
           content: Text(content),
           actions: [
             ElevatedButton(
               onPressed: () {
-                Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => InboxScreen(currentUserName: name!, currentUserEmail: email!)),
-        );
+                context.pushNamed("inbox", pathParameters: {'currentUserName': _profileInfoModel.name!, 'currentUserEmail': email!});
               },
               child: const Text('OK'),
             ),
@@ -221,20 +217,38 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
     );
   }
 
+  void showErrorDialog(String content){
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Hi there'),
+          content: Text(content),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                context.pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   void showProfileDialog(String content){
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Hey Chief'),
+          title: const Text('Hi there'),
           content: Text(content),
           actions: [
             ElevatedButton(
               onPressed: () {
-                Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
-        );
+                context.goNamed("create-profile");
               },
               child: const Text('OK'),
             ),

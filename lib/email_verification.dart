@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:collabio/project_page.dart';
-
 
 class EmailVerificationScreen extends StatefulWidget {
   final User? user;
@@ -44,20 +44,16 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     });
 
     if (isEmailVerified) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Email Successfully Verified")),
-        );
-      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email Successfully Verified")),
+      );
 
       timer?.cancel();
 
       // Redirect to the project page
       Future.delayed(const Duration(milliseconds: 500), () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MyProjectPage()),
-        );
+         context.goNamed("projects");
       });
     }
   }

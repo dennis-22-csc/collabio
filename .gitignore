@@ -50,6 +50,19 @@ app.*.map.json
 /android/.gradle
 /android/local.properties
 
-.flutter-plugins
-.flutter-plugins-dependencies
 pubspec.lock
+
+**/android/key.properties
+
+.gradle/
+/local.properties
+/.idea/caches/
+/.idea/libraries/
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+/.idea/dictionaries
+/.idea/vcs.xml
+/.idea/jsLibraryMappings.xml
+**collabio-keystore.jks

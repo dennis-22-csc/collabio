@@ -9,7 +9,7 @@ Future<dynamic> fetchUserInfoFromApi(String email) async {
   late String msg;
 
   try {
-    final url = Uri.parse('http://collabio.denniscode.tech/get-user');
+    final url = Uri.parse('https://collabio.denniscode.tech/get-user');
     final headers = {'Content-Type': 'application/json'};
     final body = jsonEncode({'email': email});
 
@@ -42,7 +42,7 @@ Future<dynamic> fetchUserInfoFromApi(String email) async {
 Future<dynamic> fetchProjectsFromApi() async {
   late String msg;
   try {
-    final url = Uri.parse('http://collabio.denniscode.tech/projects');
+    final url = Uri.parse('https://collabio.denniscode.tech/projects');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -75,7 +75,7 @@ Future<dynamic> fetchProjectsFromApi() async {
 Future<dynamic> fetchMessagesFromApi(String email) async {
   late String msg;
   try {
-    final url = Uri.parse('http://collabio.denniscode.tech/messages');
+    final url = Uri.parse('https://collabio.denniscode.tech/messages');
     final headers = {'Content-Type': 'application/json'};
     final body = jsonEncode({'email': email});
 
@@ -117,7 +117,7 @@ Future<dynamic> fetchMessagesFromApi(String email) async {
 Future<String> deleteMessages(List<String> messageIds) async {
   late String msg;
   try {
-    final url = Uri.parse('http://collabio.denniscode.tech/del-messages');
+    final url = Uri.parse('https://collabio.denniscode.tech/del-messages');
     final headers = {'Content-Type': 'application/json'};
     final body = jsonEncode({'uuids': messageIds});
 
@@ -168,7 +168,7 @@ Future<String> deleteMessages(List<String> messageIds) async {
 
 Future<String> sendProjectData(Map<String, dynamic> projectData) async {
   late String msg;
-  String url = 'http://collabio.denniscode.tech/project';
+  String url = 'https://collabio.denniscode.tech/project';
 
   try {
     final response = await http.post(
@@ -198,7 +198,7 @@ Future<String> sendProjectData(Map<String, dynamic> projectData) async {
 
 Future<String> sendMessageData(MessagesModel messagesModel, Map<String, dynamic> messageData, String currentUserEmail) async {
   late String msg;
-  String url = 'http://collabio.denniscode.tech/message';
+  String url = 'https://collabio.denniscode.tech/message';
 
   try {
     await DatabaseHelper.insertMessage(messageData);
@@ -246,7 +246,7 @@ Future<String> sendMessageData(MessagesModel messagesModel, Map<String, dynamic>
 
 Future<String> sendUserData(Map<String, dynamic> userData) async {
   late String msg;
-  String url = 'http://collabio.denniscode.tech/create-user';
+  String url = 'https://collabio.denniscode.tech/create-user';
 
   try {
     final response = await http.post(
@@ -276,7 +276,7 @@ Future<String> sendUserData(Map<String, dynamic> userData) async {
 
 Future<String> updateProfileSection(String email, String title, dynamic content) async {
   late String msg;
-  const String url = 'http://collabio.denniscode.tech/update_profile';
+  const String url = 'https://collabio.denniscode.tech/update_profile';
   final Map<String, dynamic> data = {
     'email': email,
   };
@@ -328,7 +328,7 @@ Future<String> updateProfileSection(String email, String title, dynamic content)
 
 Future<String> updateTokenSection(String email, String token) async {
   late String msg;
-  const String url = 'http://collabio.denniscode.tech/update_profile';
+  const String url = 'https://collabio.denniscode.tech/update_profile';
   final Map<String, dynamic> data = {
     'email': email,
     'firebase_token': token,
@@ -370,7 +370,7 @@ Future<String> connectToSocket(MessagesModel messagesModel, String currentUserEm
     Set<String> receivedProjectIds = {};
 
     try {
-      socket = IO.io('http://collabio.denniscode.tech', <String, dynamic>{
+      socket = IO.io('https://collabio.denniscode.tech', <String, dynamic>{
         'transports': ['websocket'],
         'query': 'email=$currentUserEmail',
       });

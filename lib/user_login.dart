@@ -9,6 +9,13 @@ import 'package:collabio/password_reset_screen.dart';
 import 'package:collabio/database.dart';
 import 'package:collabio/model.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:collabio/view_profile.dart';
+import 'package:collabio/view_project.dart';
+import 'package:collabio/post_project.dart';
+import 'package:collabio/inbox_screen.dart';
+import 'package:collabio/chat_screen.dart';
+import 'package:collabio/create_profile.dart';
 
 class LoginScreen extends StatefulWidget {
 
@@ -22,27 +29,40 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final _auth = FirebaseAuth.instance; 
-  bool _login = false;
+  final _auth = FirebaseAuth.instance;
   bool _fetchCompleted = false;
   bool _errorOccurred = false;
   String _errorMessage = "null";
   late ThemeData appTheme;
-
+  bool _login = false;
+  bool _hasProfile = false;
+  
   @override
   void initState() {
     super.initState();
-    initDatabase();
+    syncData();
+  }
+
+Future<void> syncData() async {
+    await getProfileInfo();
+    await initDatabase();
+  }
+
+Future<void> getProfileInfo() async {
+    bool myProfile = await SharedPreferencesUtil.hasProfile();
+   
+    setState(() {
+      _hasProfile = myProfile;
+    });
   }
 
   Future<void> loginUser(String email, String password) async {
     try {
       final userCredential = await _auth.signInWithEmailAndPassword(email: email, password: password);
-      final hasProfile = await SharedPreferencesUtil.hasProfile();
 
       if (userCredential.user?.emailVerified == true) {
         // Get and set profile info in cases where app data was cleared
-        if (!hasProfile) {
+        if (!_hasProfile) {
           final fetchResult = await fetchUserInfoFromApi(email);
           if (fetchResult is Map<String, dynamic>) {
             SharedPreferencesUtil.setUserInfo(fetchResult);
@@ -50,21 +70,18 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         }
         SharedPreferencesUtil.setLoggedOut(false);
+        if (!mounted) return;
+        final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
+        await profileInfoModel.updateProfileInfo();
         setState(() {
         _login = true;
       });
         // Fetch dependencies
         await fetchApiData(userCredential.user!, email);
-      } else {
+      } else {     
         // User registration successful but not yet verified, navigate to email verification screen
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => EmailVerificationScreen.withUser(user: userCredential.user),
-            ),
-          );
-        });
+        if (!mounted) return;
+        context.goNamed("email-verification", extra: userCredential.user);
       }
     } on FirebaseAuthException catch (e) {
       String message;
@@ -91,10 +108,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (projectResult is List<Project>) {
         await DatabaseHelper.insertProjects(projectResult);
         List<String> tags = (await SharedPreferencesUtil.getTags()) ?? ["mobile app development", "web development"];
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
-          projectsModel.updateProjects(tags, 10);
-        });
+        if (!mounted) return;
+        final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
+        projectsModel.updateProjects(tags, 10);
       } else {
         _showError("Unable to fetch dependencies at the moment.");
         //_showError(projectResult);
@@ -110,23 +126,21 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        //Get initial messages from local database
-        final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-        messagesModel.updateGroupedMessages(email);
+      if (!mounted) return;
+      //Get initial messages from local database
+      final messagesModel = Provider.of<MessagesModel>(context, listen: false);
+      messagesModel.updateGroupedMessages(email);
 
-        //Set up web socket for new messages
-        await connectToSocket(messagesModel, email);
+      //Set up web socket for new messages
+      await connectToSocket(messagesModel, email);
 
-        // Resend unsent messages
-        final messages = await DatabaseHelper.getUnsentMessages();
-        if (messages.isNotEmpty) {
-          for (var message in messages) {
-            await sendMessageData(messagesModel, message, email);
-          }
+      // Resend unsent messages
+      final messages = await DatabaseHelper.getUnsentMessages();
+      if (messages.isNotEmpty) {
+        for (var message in messages) {
+          await sendMessageData(messagesModel, message, email);
         }
-        
-      });
+      }
 
       if (receivedMessageIds.isNotEmpty) {
         await deleteMessages(receivedMessageIds); 
@@ -171,27 +185,136 @@ Widget build(BuildContext context) {
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       useMaterial3: true,
     );
-
-  if (!_login) {
-    return MaterialApp(
-      theme: appTheme,
-      home: buildLoginScreen(),
+   final goRouter = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) {
+            if (!_login) {
+              return MaterialApp(
+                theme: appTheme,
+                home: buildLoginScreen(),
+              );
+            }
+            if (!_fetchCompleted) {
+              return _buildLoadingIndicator();
+            }
+            if (_errorOccurred) {
+              return _buildErrorScreen();
+            }
+            return MaterialApp(
+              theme: appTheme,
+              home: const MyProjectPage(),
+              );
+          },
+        ),
+        GoRoute(
+          name: "login",
+          path: '/login',
+          pageBuilder: (context, state) => MaterialPage<void>(
+            key: state.pageKey,
+            child: const LoginScreen(),
+          ),
+        ),
+        GoRoute(
+          name: "registration",
+          path: '/registration',
+          pageBuilder: (context, state) => MaterialPage<void>(
+            key: state.pageKey,
+            child: const RegistrationScreen(),
+          ),
+        ),
+        GoRoute(
+          name: "projects",
+          path: '/projects',
+          pageBuilder: (context, state) => MaterialPage<void>(
+            key: state.pageKey,
+            child: const MyProjectPage(),
+          ),
+        ),
+        GoRoute(
+          name: "view-profile",
+          path: '/view-profile',
+          pageBuilder: (context, state) => MaterialPage<void>(
+            key: state.pageKey,
+            child: const ProfileSectionScreen(),
+          ),
+        ),
+        GoRoute(
+          name: "view-project",
+          path: '/view-project',
+          pageBuilder: (context, state) {
+            final Project project = state.extra as Project;
+            final viewProjectScreen = ViewProjectScreen(project: project);
+            return MaterialPage<void>(
+              key: state.pageKey,
+              child: viewProjectScreen,
+            );
+          },
+        ),
+        GoRoute(
+          name: "post-project",
+          path: '/post-project',
+          pageBuilder: (context, state) => MaterialPage<void>(
+            key: state.pageKey,
+            child: const ProjectUploadScreen(),
+          ),
+        ),
+        GoRoute(
+          name: "password-reset",
+          path: '/password-reset',
+          pageBuilder: (context, state) => MaterialPage<void>(
+            key: state.pageKey,
+            child: const PasswordResetScreen(),
+          ),
+        ),
+        GoRoute(
+          name: 'inbox',
+          path: '/inbox/:currentUserName/:currentUserEmail',
+          pageBuilder: (context, state) => MaterialPage<void>(
+            key: state.pageKey,
+            child: InboxScreen(currentUserName: state.pathParameters["currentUserName"]!, currentUserEmail: state.pathParameters["currentUserEmail"]!,),
+          ),
+        ),
+        GoRoute(
+          name: "email-verification",
+          path: '/email-verification',
+          pageBuilder: (context, state) {
+            final User user = state.extra as User;
+            final emailVerificationScreen = EmailVerificationScreen.withUser(user: user);
+            return MaterialPage<void>(
+              key: state.pageKey,
+              child: emailVerificationScreen,
+            );
+          },
+        ),
+        GoRoute(
+          name: "create-profile",
+          path: '/create-profile',
+          pageBuilder: (context, state) => MaterialPage<void>(
+            key: state.pageKey,
+            child: const ProfileScreen(),
+          ),
+        ),
+        GoRoute(
+          name: "chat",
+          path: '/chat/:currentUserName/:currentUserEmail/:otherPartyName/:otherPartyEmail',
+          pageBuilder: (context, state) => MaterialPage<void>(
+            key: state.pageKey,
+            child: ChatScreen(currentUserName: state.pathParameters["currentUserName"]!, currentUserEmail: state.pathParameters["currentUserEmail"]!, otherPartyName: state.pathParameters["otherPartyName"]!, otherPartyEmail: state.pathParameters["otherPartyEmail"]!),
+          ),
+        ),
+      ],
     );
-  }
-  if (!_fetchCompleted) {
-      return _buildLoadingIndicator();
-    }
 
-    if (_errorOccurred) {
-      return _buildErrorScreen();
-    }
-
-    return MaterialApp(
+    return MaterialApp.router(
       theme: appTheme,
-      home: const MyProjectPage(),
+      routeInformationProvider: goRouter.routeInformationProvider,
+      routerDelegate: goRouter.routerDelegate,
+      routeInformationParser: goRouter.routeInformationParser,
     );
   
-}
+  }
 
 Widget buildLoginScreen() {
   return Scaffold(
@@ -256,12 +379,7 @@ Widget buildLoginScreen() {
                   const SizedBox(height: 8.0),
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RegistrationScreen(),
-                        ),
-                      );
+                       context.goNamed("registration");
                     },
                     child: const Text('Create Account'),
                   ),
@@ -269,12 +387,7 @@ Widget buildLoginScreen() {
               ),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PasswordResetScreen(),
-                    ),
-                  );
+                  context.goNamed("password-reset");
                 },
                 child: const Text('Forgot Password?'),
               ),
@@ -317,7 +430,7 @@ Widget _buildLoadingIndicator() {
       home: Scaffold(
         body: Center(
           child: AlertDialog(
-            title: const Text('Hi Chief'),
+            title: const Text('Hi there'),
             content: Text(_errorMessage),
             actions: [
               TextButton(

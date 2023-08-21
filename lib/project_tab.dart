@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:collabio/view_project.dart';
 import 'package:collabio/model.dart';
 import 'package:provider/provider.dart';
 import 'package:collabio/util.dart';
+import 'package:go_router/go_router.dart';
 
 class MatchingProjectsTab extends StatelessWidget {
 
@@ -35,12 +35,7 @@ class ProjectsListWidget extends StatelessWidget {
   const ProjectsListWidget({Key? key, required this.projects}) : super(key: key);
 
   void _navigateToProjectScreen(BuildContext context, Project project) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ViewProjectScreen(project: project),
-      ),
-    );
+    context.pushNamed("view-project", extra: project);
   }
 
   @override

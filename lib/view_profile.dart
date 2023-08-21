@@ -5,7 +5,9 @@ import 'package:collabio/util.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:collabio/skill_edit.dart';
 import 'package:collabio/general_profile_edit.dart';
-import 'package:collabio/project_page.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:collabio/model.dart';
 
 class ProfileSection {
   String title;
@@ -43,16 +45,6 @@ class _ProfileSectionViewState extends State<ProfileSectionView> {
     _textEditingController = TextEditingController(text: widget.section.content);
    
   }
-
-@override
-void dispose() {
-  _textEditingController.dispose();
-  super.dispose();
-}
-
-
-
-    
   
    void showEditDialog(BuildContext context) {
     showGeneralDialog(
@@ -149,9 +141,8 @@ class ProfileSectionScreen extends StatefulWidget {
 }
 
 class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
+  late ProfileInfoModel _profileInfoModel;
 
-  File? profilePicture;
-  
   final List<ProfileSection> sections = [
     ProfileSection(title: 'First Name', content: '', tags: []),
     ProfileSection(title: 'Last Name', content: '', tags: []),
@@ -162,28 +153,6 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
   @override
   void initState() {
     super.initState();
-    loadProfilePicture();
-    loadProfileContent();
-  }
-
-  void loadProfilePicture() async {
-    String? persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
-
-    if (persistedFilePath != null) {
-      File existingProfilePicture = File(persistedFilePath);
-      if (existingProfilePicture.existsSync()) {
-        setState(() {
-          profilePicture = existingProfilePicture;
-        });
-      }
-    }
-  }
-  void loadProfileContent() async {
-    sections[0].content = (await SharedPreferencesUtil.getFirstName()) ?? '';
-    sections[1].content = (await SharedPreferencesUtil.getLastName()) ?? '';
-    sections[2].content = (await SharedPreferencesUtil.getAbout()) ?? '';
-    sections[3].tags = (await SharedPreferencesUtil.getTags()) ?? [];
-    setState(() {});
   }
 
   void selectProfilePicture() async {
@@ -197,9 +166,7 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
 
         bool saved = await Util.saveProfilePicture(newProfilePicture);
         if (saved) {
-          setState(() {
-            profilePicture = newProfilePicture;
-          });
+          _profileInfoModel.updateProfilePicture();
         }
       }
     }
@@ -207,12 +174,19 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final profileInfoModel = Provider.of<ProfileInfoModel>(context);    
+    sections[0].content = profileInfoModel.firstName!;
+    sections[1].content = profileInfoModel.lastName!;
+    sections[2].content = profileInfoModel.about!;
+    sections[3].tags = profileInfoModel.tags!;
+    _profileInfoModel = profileInfoModel;
+
     return Scaffold(
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MyProjectPage(), ), );
+              context.pop();
             },
           ),
           title: const Text('Your Profile')
@@ -225,7 +199,7 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
                 children: [
                   CircleAvatar(
                     radius: 80,
-                    backgroundImage: profilePicture != null ? FileImage(profilePicture!) : null,
+                    backgroundImage: profileInfoModel.profilePicture == null ? null : FileImage(profileInfoModel.profilePicture!),
                     child: Stack(
                       children: [
                         Align(

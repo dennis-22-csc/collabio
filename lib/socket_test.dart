@@ -98,9 +98,39 @@ List<Project> getMatchingProjects(
 }
 
 class DataSender {
-  Future<String> sendMessageData(Map<String, dynamic> messageData) async {
-    late String msg;
-  String url = 'http://collabio.denniscode.tech/message';
+  Future<String> sendProjectData(Map<String, dynamic> projectData) async {
+  late String msg;
+  String url = 'https://collabio.denniscode.tech/project';
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      body: jsonEncode(projectData),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        return jsonDecode(responseBody);
+      } else {
+        msg = responseBody;
+      }
+    } else {
+      final responseText = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+      msg = 'HTTP Error Project. $responseText';
+    }
+  } catch (error) {
+    msg = 'Error Project. $error';
+  }
+  return msg;
+}
+
+Future<String> sendMessageData(Map<String, dynamic> messageData) async {
+  late String msg;
+  String url = 'https://collabio.denniscode.tech/message';
 
   try {
     final response = await http.post(
@@ -109,27 +139,30 @@ class DataSender {
       headers: {'Content-Type': 'application/json'},
     );
 
-    
-    dynamic responseData = jsonDecode(response.body);
-      
-    msg = responseData;
-    
-  } catch (e) {
-    msg = 'Send Message. $e';
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final responseData = jsonDecode(responseBody);
+        if (responseData == "Message inserted successfully.") {
+          return "Message inserted successfully.";
+        } else {
+          msg = 'Send Message Internal $responseData';
+        }
+        
+      } else {
+        msg = responseBody;
+      }
+    } else {
+      final responseText = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+      msg = 'HTTP Error Message. $responseText';
+    }
+  } catch (error) {
+    msg = 'Send Message External. $error';
   }
   return msg;
 }
-
-  Future<dynamic> createNewProject(Map<String, dynamic> project) async {
-    const url = 'http://collabio.denniscode.tech/project';
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(project),
-    );
-
-    return jsonDecode(response.body);
-  }
 
 }
 
@@ -297,10 +330,10 @@ If you are interested in contributing to this app and helping people achieve the
 }
 ];
 
- //final messageResponse = await dataSender.sendMessageData(message);
- //print(messageResponse);
+ final messageResponse = await dataSender.sendMessageData(message);
+ print(messageResponse);
   
-  //final projectResponse = await dataSender.createNewProject(project1);
+  //final projectResponse = await dataSender.sendProjectData(project2);
   //print('Project response: $projectResponse');
 
   //final userResponse = await dataSender.fetchUserInfoFromApi("denniskoko@gmail.com");

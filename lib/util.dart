@@ -93,44 +93,52 @@ static Future<String> saveProfileInformation({
     return false;
   }
 
+static Future<bool> saveProfilePicture(File profilePicture) async {
+  Directory? directory;
 
-   static Future<bool> saveProfilePicture(File profilePicture) async {
-     Directory? directory;
+  if (Platform.isAndroid) {
+    directory = await getExternalStorageDirectory();
+    if (directory != null) {
+      String newPath = "";
 
-     if (Platform.isAndroid) {
-       directory = await getExternalStorageDirectory();
-       if (directory != null) {
-         String newPath = "";
+      List<String> paths = directory.path.split("/");
+      for (int x = 1; x < paths.length; x++) {
+        String folder = paths[x];
+        if (folder != "Android") {
+          newPath += "/$folder";
+        } else {
+          break;
+        }
+      }
+      newPath = "$newPath/Collabio/profile_picture";
+      directory = Directory(newPath);
+    }
+  }
 
-         List<String> paths = directory.path.split("/");
-         for (int x = 1; x < paths.length; x++) {
-           String folder = paths[x];
-           if (folder != "Android") {
-             newPath += "/$folder";
-           } else {
-             break;
-           }
-         }
-         newPath = "$newPath/Collabio/profile_picture";
-         directory = Directory(newPath);
-       }
-     }
+  if (directory != null && !await directory.exists()) {
+    await directory.create(recursive: true);
+  }
 
-     if (directory != null && !await directory.exists()) {
-       await directory.create(recursive: true);
-     }
-     if (directory != null && await directory.exists()) {
-       File saveFile = File("${directory.path}/${profilePicture.path.split('/').last}");
-       await profilePicture.copy(saveFile.path);
-       SharedPreferences prefs = await SharedPreferences.getInstance();
-       await prefs.setString('profile_picture', saveFile.path);
+  if (directory != null && await directory.exists()) {
+    // Delete any existing picture in the directory
+    if (directory.listSync().isNotEmpty) {
+      for (var file in directory.listSync()) {
+        if (file is File) {
+          await file.delete();
+        }
+      }
+    }
 
-       return true;
-     }
+    File saveFile = File("${directory.path}/${profilePicture.path.split('/').last}");
+    await profilePicture.copy(saveFile.path);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('profile_picture', saveFile.path);
 
-     return false;
-   }
+    return true;
+  }
 
+  return false;
+}
 
    static Future<bool> checkAndCreateDirectory(BuildContext context) async {
      if (Platform.isAndroid) {

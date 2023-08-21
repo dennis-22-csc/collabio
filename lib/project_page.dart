@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:collabio/project_tab.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:collabio/util.dart';
-import 'package:collabio/view_profile.dart';
-import 'package:collabio/create_profile.dart';
-import 'package:collabio/user_login.dart';
-import 'package:collabio/post_project.dart';
-import 'package:collabio/inbox_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:collabio/model.dart';
+import 'package:go_router/go_router.dart';
 
 class MyProjectPage extends StatefulWidget {
   
@@ -25,49 +20,17 @@ class _MyProjectPageState extends State<MyProjectPage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final scaffoldKey = GlobalKey<ScaffoldState>();
-   
-  bool hasProfile = false;
-  String? name;
+  
   String? _email;
-  File? profilePicture;
-  List<String> tags = [];
   
   @override
   void initState() {
     super.initState();
-    loadProfilePicture();
+    
     User user = FirebaseAuth.instance.currentUser!; 
     _email = user.email;
-    getProfileStatus();
-    loadProfileContent();
-    getSkills();
+    
     }
-
-  void loadProfilePicture() async {
-    String? persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
-
-    if (persistedFilePath != null) {
-      File existingProfilePicture = File(persistedFilePath);
-      if (existingProfilePicture.existsSync()) {
-        setState(() {
-          profilePicture = existingProfilePicture;
-        });
-      }
-    }
-  }
-  
-  void getSkills() async {
-    List<String> myTags = (await SharedPreferencesUtil.getTags()) ?? ["mobile app development", "web development"];
-    setState(() {
-      tags = myTags;
-    });
-  } 
-  void getProfileStatus() async {
-    bool myProfile = await SharedPreferencesUtil.hasProfile();
-    setState(() {
-      hasProfile = myProfile;
-    });
-  }
   
   void handleSearch() {
     String searchText = _searchController.text;
@@ -83,58 +46,41 @@ class _MyProjectPageState extends State<MyProjectPage> {
   
   }
 
-  void loadProfileContent() async {
-    String fName = (await SharedPreferencesUtil.getFirstName()) ?? '';
-    String lName = (await SharedPreferencesUtil.getLastName()) ?? '';
-    setState(() {
-      name = '$fName $lName';
-    });
-  }
-
-
   @override
   Widget build(BuildContext context) {
+  final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
   List<Widget> drawerOptions = [
-  if (hasProfile)
+  if (profileInfoModel.hasProfile!)
     UserAccountsDrawerHeader(
-      accountName: Text(name!),
+      accountName: Text(profileInfoModel.name!),
       accountEmail: Text(_email!),
       currentAccountPicture: CircleAvatar(
-        backgroundImage: profilePicture != null ? FileImage(profilePicture!) : null,
-        child: profilePicture == null ? const Icon(Icons.person) : null,
+        backgroundImage: profileInfoModel.profilePicture != null ? FileImage(profileInfoModel.profilePicture!) : null,
+        child: profileInfoModel.profilePicture == null ? const Icon(Icons.person) : null,
       ),
     )
   else
     Container(height: 160),
   
-  if (hasProfile)
+  if (profileInfoModel.hasProfile!)
     ListTile(
       title: const Text('View Profile'),
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ProfileSectionScreen()),
-        );
+        context.pushNamed("view-profile");
       },
     )
   else
     ListTile(
       title: const Text('Create Profile'),
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
-        );
+        context.pushNamed("create-profile");
       },
     ),
     ListTile(
       title: const Text('Post Project'),
       onTap: () {
-        if (hasProfile) {
-          Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ProjectUploadScreen()),
-        );
+        if (profileInfoModel.hasProfile!) {
+          context.pushNamed("post-project");
         } else {
           showProfileDialog("You can't post a project without creating a profile.");        
         }
@@ -145,7 +91,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
     onTap: () {
       FirebaseAuth.instance.signOut();
       SharedPreferencesUtil.setLoggedOut(true);
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()),);
+      context.goNamed("login");
     },
   ),
 ];
@@ -164,8 +110,8 @@ class _MyProjectPageState extends State<MyProjectPage> {
                 },
                 child: CircleAvatar(
                   radius: 20,
-                  backgroundImage: profilePicture != null ? FileImage(profilePicture!) : null,
-                  child: profilePicture == null ? const Icon(Icons.person) : null,
+                  backgroundImage: profileInfoModel.profilePicture != null ? FileImage(profileInfoModel.profilePicture!) : null,
+                  child: profileInfoModel.profilePicture == null ? const Icon(Icons.person) : null,
                 ),
               ),
               const SizedBox(width: 8.0),
@@ -188,7 +134,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
                 ).then((value) {
                   if (value != null && value == 'refresh') {
                     final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
-                    projectsModel.updateProjects(tags, 10);
+                    projectsModel.updateProjects(profileInfoModel.tags!, 10);
                     _searchController.clear();
                   }
                 });
@@ -267,13 +213,8 @@ class _MyProjectPageState extends State<MyProjectPage> {
               _currentIndex = index;
             });
             if (index == 1) {
-              if (hasProfile) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => InboxScreen(currentUserEmail: _email!, currentUserName: name!),
-                ),
-              );
+              if (profileInfoModel.hasProfile!) {
+                context.pushNamed("inbox", pathParameters: {'currentUserName': profileInfoModel.name!, 'currentUserEmail': _email!});
               } else {
                 showProfileDialog("You can't send or view messages without creating a profile.");
               } 
@@ -303,15 +244,12 @@ class _MyProjectPageState extends State<MyProjectPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Hey Chief'),
+          title: const Text('Hi there'),
           content: Text(content),
           actions: [
             ElevatedButton(
               onPressed: () {
-                Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
-        );
+                context.goNamed("create-profile");
               },
               child: const Text('OK'),
             ),

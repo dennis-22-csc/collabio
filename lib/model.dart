@@ -1,5 +1,7 @@
 import 'package:collabio/database.dart';
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:collabio/util.dart';
 
 class Project {
   final String id;
@@ -157,4 +159,73 @@ class ProjectsModel extends ChangeNotifier {
   }
 
   
+}
+
+class ProfileInfoModel extends ChangeNotifier {
+  String? firstName;
+  String? lastName;
+  String? about;
+  List<String>? tags;
+  String? persistedFilePath; 
+  File? profilePicture;
+  bool? hasProfile;
+  bool? sentToken;
+  String? myToken;
+  String? name;
+
+  Future<void> updateProfileInfo() async {
+    hasProfile = await SharedPreferencesUtil.hasProfile();
+    firstName = await SharedPreferencesUtil.getFirstName();
+    lastName = await SharedPreferencesUtil.getLastName();
+    name = '$firstName $lastName';
+    about = await SharedPreferencesUtil.getAbout();
+    tags = await SharedPreferencesUtil.getTags();
+    persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
+    if (persistedFilePath != null) {
+      File existingProfilePicture = File(persistedFilePath!);
+      if (existingProfilePicture.existsSync()) {
+        profilePicture = existingProfilePicture;
+      }
+    }
+    sentToken = await SharedPreferencesUtil.sentToken();
+    myToken = await SharedPreferencesUtil.getToken();
+    notifyListeners();
+  }
+
+  Future<void> updateHasProfile() async {
+    hasProfile = await SharedPreferencesUtil.hasProfile();
+    notifyListeners();
+  }
+  Future<void> updateName() async {
+    firstName = await SharedPreferencesUtil.getFirstName();
+    lastName = await SharedPreferencesUtil.getLastName();
+    name = '$firstName $lastName';
+    notifyListeners();
+  }
+  Future<void> updateAbout() async {
+    about = await SharedPreferencesUtil.getAbout();
+    notifyListeners();
+  }
+  Future<void> updateTags() async {
+    tags = await SharedPreferencesUtil.getTags();
+    notifyListeners();
+  }
+  Future<void> updateProfilePicture() async {
+    persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
+    if (persistedFilePath != null) {
+      File existingProfilePicture = File(persistedFilePath!);
+      if (existingProfilePicture.existsSync()) {
+        profilePicture = existingProfilePicture;
+      }
+    }
+    notifyListeners();
+  }
+  Future<void> updateSentToken() async {
+    sentToken = await SharedPreferencesUtil.sentToken();
+    notifyListeners();
+  }
+  Future<void> updateMyToken() async {
+    myToken = await SharedPreferencesUtil.getToken();
+    notifyListeners();
+  }
 }

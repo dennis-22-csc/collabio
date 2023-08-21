@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:collabio/user_login.dart';
-import 'package:collabio/email_verification.dart';
+import 'package:go_router/go_router.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({Key? key}) : super(key: key);
@@ -109,8 +108,7 @@ Widget build(BuildContext context) {
                 const SizedBox(height: 8.0),
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    );
+                    context.goNamed("login");
                   },
                   child: const Text('Login'),
                 ),
@@ -134,11 +132,11 @@ void showStatusDialog(String title, String content){
             ElevatedButton(
               onPressed: () {
                 if (title == 'Success in registeration') {
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => EmailVerificationScreen.withUser(user: userCredential!.user), ),);
+                  context.goNamed("email-verification", extra: userCredential!.user);
                 } else if (title == 'Success in re-registeration') {
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen() ),);
+                  context.goNamed("login");
                 }else {
-                  Navigator.of(context).pop();
+                  context.pop();
                 }
               },
               child: const Text('OK'),

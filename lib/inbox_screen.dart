@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:collabio/model.dart';
-import 'package:collabio/chat_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:collabio/util.dart';
-import 'package:collabio/project_page.dart';
+import 'package:go_router/go_router.dart';
 
 class InboxScreen extends StatefulWidget {
   final String currentUserName;
@@ -20,7 +19,6 @@ class _InboxScreenState extends State<InboxScreen> {
   @override
   void initState() {
     super.initState();
-  
   }
 
   @override
@@ -39,7 +37,7 @@ class _InboxScreenState extends State<InboxScreen> {
         leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MyProjectPage(), ), );
+              context.goNamed("projects");
             },
           ),
         title: const Text('Inbox'),
@@ -117,17 +115,7 @@ class _InboxScreenState extends State<InboxScreen> {
     ],
   ),
   onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChatScreen(
-          currentUserName: widget.currentUserName,
-          currentUserEmail: widget.currentUserEmail,
-          otherPartyName: otherPartyName,
-          otherPartyEmail: groupKey,
-        ),
-      ),
-    );
+    context.pushNamed("chat", pathParameters: {'currentUserName': widget.currentUserName, 'currentUserEmail': widget.currentUserEmail, 'otherPartyName': otherPartyName, 'otherPartyEmail': groupKey});
   },
 );
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:collabio/network_handler.dart';
-import 'package:collabio/view_profile.dart';
+import 'package:go_router/go_router.dart';
+import 'package:collabio/model.dart';
+import 'package:provider/provider.dart';
 
 class ProfileEditDialog extends StatefulWidget {
   final TextEditingController textEditingController;
@@ -21,15 +23,17 @@ class ProfileEditDialog extends StatefulWidget {
 }
 
 class _ProfileEditDialogState extends State<ProfileEditDialog> {
+  final _formKey = GlobalKey<FormState>();
   
   void updateProfileContent(String email, String title, dynamic content) async {
-        
-        final String result = await updateProfileSection(email, title, content);
-        if (result == "Profile section $title updated successfully") {
-          showStatusDialog("$title updated successfully");
-        } else {
-          showStatusDialog("Can't perform any profile update at the moment");
-        }
+    final result = await updateProfileSection(email, title, content);
+    if (result == "Profile section $title updated successfully") {
+    if (!mounted) return;
+    context.pop();
+    updateProfileInfo(context);
+    } else {
+      showStatusDialog("Can't perform any profile updates at the moment");
+    }
         
   }
   
@@ -41,32 +45,45 @@ class _ProfileEditDialogState extends State<ProfileEditDialog> {
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () {
-                Navigator.of(context).pop();
+                context.pop();
               },
             ),
             title: Text('Edit ${widget.title}'),
           ),
-          body: Column(
+          body: Form (
+          key: _formKey,
+          child: Column(
             children: [
               Container(
                 padding: const EdgeInsets.all(20),
-                child: TextField(
+                child: TextFormField(
                   controller: widget.textEditingController,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  maxLines: widget.title != "About" ? 1 : 5,
+                  validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "This field can't be empty.";
+                  }
+                  return null;
+                },
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: ElevatedButton(
                   onPressed: () {
-                    // Handle Save button logic here
-                     if (widget.textEditingController.text != widget.content) {
-                        updateProfileContent(widget.email, widget.title, widget.textEditingController.text);
+                    final updatedContent = widget.textEditingController.text.trim();
+                     if (updatedContent != widget.content && _formKey.currentState != null && _formKey.currentState!.validate()) {
+                        updateProfileContent(widget.email, widget.title, updatedContent);
                       }
                   },
                   child: const Text('Save'),
                 ),
               ),
             ],
+          ),
           ),
         ); 
     
@@ -77,12 +94,12 @@ class _ProfileEditDialogState extends State<ProfileEditDialog> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Hey Chief'),
+          title: const Text('Hi there'),
           content: Text(content),
           actions: [
             ElevatedButton(
               onPressed: () {
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProfileSectionScreen(),));
+                context.pop();  
               },
               child: const Text('OK'),
             ),
@@ -90,5 +107,22 @@ class _ProfileEditDialogState extends State<ProfileEditDialog> {
         );
       },
     );
+  }
+
+  void updateProfileInfo(BuildContext context) {
+    final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
+    
+    switch (widget.title) {
+    case 'First Name':
+      profileInfoModel.updateName();  
+      break;
+    case 'Last Name':
+      profileInfoModel.updateName();  
+      break;
+    case 'About':
+      profileInfoModel.updateAbout();  
+    default:
+      break;
+  }
   }
 }
