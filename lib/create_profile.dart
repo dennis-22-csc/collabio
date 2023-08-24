@@ -94,6 +94,7 @@ void _onFocusChange() {
 
 
   Future<void> _selectProfilePicture() async {
+    try {
     bool directoryExists = await Util.checkAndCreateDirectory(context);
 
     if (directoryExists) {
@@ -110,6 +111,11 @@ void _onFocusChange() {
       if (!mounted) return;
       context.goNamed("projects");
     }
+
+    } catch (error) {
+      showStatusDialog("Upload Error", error.toString());
+    }
+
   }
 
 
@@ -121,16 +127,23 @@ void _onFocusChange() {
   String? email = _email;
   late String msg;
   late String title;
+  String? pictureUri;
 
   if (_profilePicture != null) {
-    String result = await Util.saveProfileInformation(
+    // Save profile picture to internal storage
+    bool savedPicture = await Util.saveProfilePicture(_profilePicture!);
+        
+    if (savedPicture) {
+      pictureUri = await SharedPreferencesUtil.getPersistedFilePath();
+      String result = await Util.saveProfileInformation(
       firstName: firstName,
       lastName: lastName,
       about: about,
       email: email!,
       tags: _selectedTags,
-    );
-    if (result == "User inserted successfully.") {
+      pictureUri: pictureUri,
+      );
+      if (result == "User inserted successfully.") {
       try {
         // Save data to shared preferences after successful remote save
         Map<String, dynamic> userInfo = {
@@ -138,25 +151,30 @@ void _onFocusChange() {
           'lastName': lastName,
           'about': about,
           'tags': _selectedTags,
+          'pictureUri': pictureUri,
         };
         await SharedPreferencesUtil.setUserInfo(userInfo);
-
-        // Save profile picture to internal storage
-        await Util.saveProfilePicture(_profilePicture!);
         await SharedPreferencesUtil.setHasProfile(true);
-        if (!mounted) return;
-        final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
-        profileInfoModel.updateProfileInfo();
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
+          profileInfoModel.updateProfileInfo();
+        });
         msg = "Profile created successfully";
         title = "Success";
       } catch (e) {
         //msg = 'Error $e.toString()';
         msg = "Can't create profile at the moment";
         title = "Error";
+        SharedPreferencesUtil.saveProfilePicturePath('');
       }
     } else {
       //msg = "Failed to create profile $result";
       msg = "Can't create profile at the moment";
+      title = "Error";
+      SharedPreferencesUtil.saveProfilePicturePath('');
+    }
+    } else {
+      msg = 'Unable to save profile picture.';
       title = "Error";
     }
   } else {
@@ -377,9 +395,10 @@ void _onFocusChange() {
           actions: [
             ElevatedButton(
               onPressed: () {
-                 Navigator.of(context).pop();
                 if (title == "Success") {
                   context.goNamed("projects");
+                } else {
+                  context.pop();
                 }
               },
               child: const Text('OK'),

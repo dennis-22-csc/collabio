@@ -5,6 +5,8 @@ import 'package:collabio/util.dart';
 import 'package:provider/provider.dart';
 import 'package:collabio/model.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:io';
+import 'package:url_launcher/url_launcher.dart';
 
 class MyProjectPage extends StatefulWidget {
   
@@ -22,15 +24,17 @@ class _MyProjectPageState extends State<MyProjectPage> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   
   String? _email;
+  User? user;
+  late ProfileInfoModel profileInfoModel;
   
   @override
   void initState() {
     super.initState();
     
-    User user = FirebaseAuth.instance.currentUser!; 
-    _email = user.email;
-    
+    user = FirebaseAuth.instance.currentUser!; 
+    _email = user?.email;
     }
+
   
   void handleSearch() {
     String searchText = _searchController.text;
@@ -45,24 +49,38 @@ class _MyProjectPageState extends State<MyProjectPage> {
     _searchFocusNode.unfocus();
   
   }
+  
+  FileImage buildProfilePicture (String persistedFilePath) {
+    late FileImage profilePicture;
+     
+    File existingProfilePicture = File(persistedFilePath);
+    if (existingProfilePicture.existsSync()) {
+      profilePicture = FileImage(existingProfilePicture);
+    }
+    return profilePicture;
+  }
 
+  void openDeleteAccountUrl() async {
+    final Uri url = Uri.parse('https://collabio.denniscode.tech/del-account');
+    if (await canLaunchUrl(url)) await launchUrl(url);
+  }
   @override
   Widget build(BuildContext context) {
-  final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
+   profileInfoModel = Provider.of<ProfileInfoModel>(context);
   List<Widget> drawerOptions = [
-  if (profileInfoModel.hasProfile!)
+  if (profileInfoModel.hasProfile)
     UserAccountsDrawerHeader(
       accountName: Text(profileInfoModel.name!),
       accountEmail: Text(_email!),
       currentAccountPicture: CircleAvatar(
-        backgroundImage: profileInfoModel.profilePicture != null ? FileImage(profileInfoModel.profilePicture!) : null,
-        child: profileInfoModel.profilePicture == null ? const Icon(Icons.person) : null,
+        backgroundImage: profileInfoModel.persistedFilePath != null && profileInfoModel.hasProfile ? buildProfilePicture(profileInfoModel.persistedFilePath!): null,
+        child: profileInfoModel.persistedFilePath == null && !profileInfoModel.hasProfile? const Icon(Icons.person) : null,
       ),
     )
   else
     Container(height: 160),
   
-  if (profileInfoModel.hasProfile!)
+  if (profileInfoModel.hasProfile)
     ListTile(
       title: const Text('View Profile'),
       onTap: () {
@@ -79,7 +97,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
     ListTile(
       title: const Text('Post Project'),
       onTap: () {
-        if (profileInfoModel.hasProfile!) {
+        if (profileInfoModel.hasProfile) {
           context.pushNamed("post-project");
         } else {
           showProfileDialog("You can't post a project without creating a profile.");        
@@ -89,9 +107,14 @@ class _MyProjectPageState extends State<MyProjectPage> {
   ListTile(
     title: const Text('Log Out'),
     onTap: () {
-      FirebaseAuth.instance.signOut();
-      SharedPreferencesUtil.setLoggedOut(true);
-      context.goNamed("login");
+      context.pushNamed("login");
+      SharedPreferencesUtil.setLogOutStatus(true);
+    },
+  ),
+  ListTile(
+    title: const Text('Delete Account'),
+    onTap: () {
+      openDeleteAccountUrl();
     },
   ),
 ];
@@ -110,8 +133,8 @@ class _MyProjectPageState extends State<MyProjectPage> {
                 },
                 child: CircleAvatar(
                   radius: 20,
-                  backgroundImage: profileInfoModel.profilePicture != null ? FileImage(profileInfoModel.profilePicture!) : null,
-                  child: profileInfoModel.profilePicture == null ? const Icon(Icons.person) : null,
+                  backgroundImage: profileInfoModel.persistedFilePath != null ? buildProfilePicture(profileInfoModel.persistedFilePath!) : null,
+                  child: profileInfoModel.persistedFilePath == null ? const Icon(Icons.person) : null,
                 ),
               ),
               const SizedBox(width: 8.0),
@@ -213,7 +236,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
               _currentIndex = index;
             });
             if (index == 1) {
-              if (profileInfoModel.hasProfile!) {
+              if (profileInfoModel.hasProfile) {
                 context.pushNamed("inbox", pathParameters: {'currentUserName': profileInfoModel.name!, 'currentUserEmail': _email!});
               } else {
                 showProfileDialog("You can't send or view messages without creating a profile.");

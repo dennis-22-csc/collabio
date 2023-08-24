@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import 'package:collabio/model.dart';
+import 'package:provider/provider.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({Key? key}) : super(key: key);
@@ -16,20 +18,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   UserCredential? userCredential;
- 
+  bool isObscure= false;
+  late ProfileInfoModel profileInfoModel;
+
   Future<void> registerUser(String email, String password) async {
     try {
       userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      showStatusDialog('Success in registeration', 'Please verify email');
+      showStatusDialog('Success in registration', 'Please verify email');
     } on FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
-        showStatusDialog('Success in re-registeration', 'Please login with new password');
+        showStatusDialog('Success in re-registration', 'Please login with new password');
       } else {
         // User registration failed
-        showStatusDialog('Error in registeration', '$e');
+        showStatusDialog('Error in registration', '$e');
       }     
     }
   }
@@ -45,9 +49,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   @override
 Widget build(BuildContext context) {
+  profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
+   
   return Scaffold(
     appBar: AppBar(
-      title: const Text('User Registration'),
+      title: const Text('Create Account'),
     ),
     resizeToAvoidBottomInset: false,
     body: SingleChildScrollView(
@@ -74,9 +80,17 @@ Widget build(BuildContext context) {
             const SizedBox(height: 16.0),
             TextFormField(
               controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
+              obscureText: !isObscure,
+              decoration: InputDecoration(
                 labelText: 'Password',
+                suffixIcon: IconButton(
+                    icon: Icon(isObscure ? Icons.visibility : Icons.visibility_off,),
+                    onPressed: () {
+                      setState(() {
+                        isObscure = !isObscure;
+                      });
+                    },
+                  ),
               ),
               validator: (value) {
                 if (value!.isEmpty) {
@@ -108,7 +122,7 @@ Widget build(BuildContext context) {
                 const SizedBox(height: 8.0),
                 ElevatedButton(
                   onPressed: () {
-                    context.goNamed("login");
+                    profileInfoModel.updateLogOutUserStatusTemp(true);
                   },
                   child: const Text('Login'),
                 ),
@@ -131,10 +145,8 @@ void showStatusDialog(String title, String content){
           actions: [
             ElevatedButton(
               onPressed: () {
-                if (title == 'Success in registeration') {
-                  context.goNamed("email-verification", extra: userCredential!.user);
-                } else if (title == 'Success in re-registeration') {
-                  context.goNamed("login");
+                if (title == 'Success in registration' || title == 'Success in re-registration') {
+                  profileInfoModel.updateUserTemp(userCredential?.user);
                 }else {
                   context.pop();
                 }
@@ -145,6 +157,7 @@ void showStatusDialog(String title, String content){
         );
       },
     );
-  }
+}
+
 
 }

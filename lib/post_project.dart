@@ -21,18 +21,18 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> with SingleTi
   final TextEditingController _projectDescriptionController = TextEditingController();
   final List<String> _selectedTags = [];
   String? _email;
+  String? _name;
+  String? _about;
   bool _addButtonPressed = false;
   bool _done = false;
   final FocusNode _focusNode = FocusNode();
   late StreamSubscription<bool> keyboardSubscription;
-  late ProfileInfoModel _profileInfoModel;
-
+  
   @override
   void initState() {
     super.initState();
     User user = FirebaseAuth.instance.currentUser!; 
-    _email = user.email; 
-    getProfileModel();
+    _email = user.email;
      _focusNode.addListener(_onFocusChange);
     // Register to listen to keyboard visibility changes.
     var keyboardVisibilityController = KeyboardVisibilityController();
@@ -42,13 +42,6 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> with SingleTi
         }
     });
     
-  }
-
-Future<void> getProfileModel() async {
-    final profileInfoModel = Provider.of<ProfileInfoModel>(context);
-    setState(() {
-      _profileInfoModel = profileInfoModel;
-    });
   }
 
 void _onFocusChange() {
@@ -100,9 +93,9 @@ void _onFocusChange() {
         'timestamp': currentTime.toString(),
         'description': projectDescription,
         'tags': _selectedTags,
-        'poster_name': _profileInfoModel.name,
+        'poster_name': _name,
         'poster_email': _email,
-        'poster_about': _profileInfoModel.about,
+        'poster_about': _about,
       };
 
         // Send project
@@ -124,6 +117,10 @@ void _onFocusChange() {
   }
   @override
   Widget build(BuildContext context) {
+    final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
+    _about = profileInfoModel.about; 
+    _name = profileInfoModel.name;
+
     final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final double tagHeight = keyboardHeight + 50;
 
@@ -259,7 +256,7 @@ void _onFocusChange() {
               ),
               const SizedBox(height: 16.0),
               ElevatedButton(
-                onPressed: (){
+                onPressed:  _focusNode.hasFocus ? null : (){
                   if (_formKey.currentState != null && _formKey.currentState!.validate()) {
                      _publishProject();
                   }

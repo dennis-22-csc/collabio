@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:collabio/model.dart';
+import 'package:collabio/database.dart';
 import 'package:collabio/network_handler.dart';
 import 'package:collabio/util.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -11,12 +12,13 @@ import 'package:go_router/go_router.dart';
 
 
 class ViewProjectScreen extends StatefulWidget {
-  final Project project;
-
+  final Project? project;
+  final String? projectId;
 
   const ViewProjectScreen({
     Key? key,
-    required this.project,
+    this.project,
+    this.projectId,
   }) : super(key: key);
 
   @override
@@ -26,34 +28,47 @@ class ViewProjectScreen extends StatefulWidget {
 class _ViewProjectScreenState extends State<ViewProjectScreen> {
   final TextEditingController _messageController = TextEditingController();
   String? email;
-  late ProfileInfoModel _profileInfoModel;
+  String? _name;
+  late Project project;
+  bool _hasProfile = false;
 
   @override
   void initState() {
     super.initState();
     User user = FirebaseAuth.instance.currentUser!; 
     email = user.email;
-    getProfileModel();
   }
 
-Future<void> getProfileModel() async {
-    final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
-  
-    setState(() {
-      _profileInfoModel = profileInfoModel;
-    });
+  Future<Project?> _fetchProject() async {
+  try {
+    final fetchResult = await DatabaseHelper.getProjectById(widget.projectId!);
+    
+    if (fetchResult == "Project not found") {
+      return null;
+    }
+
+    return fetchResult;
+  } catch (error) {
+    rethrow;
   }
+}
 
   @override
   Widget build(BuildContext context) {
     final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
-  
+    _hasProfile = profileInfoModel.hasProfile; 
+    _name = profileInfoModel.name;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            context.pop();
+            if (widget.projectId == null) {
+              context.pop();
+            } else {
+              context.goNamed("projects");
+            }
           },
         ),
         title: const Text('Project Details'),
@@ -61,23 +76,40 @@ Future<void> getProfileModel() async {
       body: SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
+        child:  FutureBuilder<Project?>(
+          future: widget.project != null ? Future.value(widget.project) : _fetchProject(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            } else if (snapshot.hasError) {
+              return Center(
+              child: Text('Error: ${snapshot.error}'),
+              );
+            } else if (!snapshot.hasData) {
+              return const Center(
+              child: Text('No project matching the ID.'),
+              );
+            }
+              
+            project = snapshot.data!; 
+
+            return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.project.title,
+              project.title,
               style: const TextStyle(
                 fontSize: 20.0,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8.0),
-            Text('Poster: ${widget.project.posterName}'),
+            Text('Poster: ${project.posterName}'),
             const SizedBox(height: 8.0),
-            Text('Posted: ${Util.extractDate(widget.project.timestamp)}'),
+            Text('Posted: ${Util.extractDate(project.timestamp)}'),
             const SizedBox(height: 16.0),
             MarkdownBody(
-              data: widget.project.description,
+              data: project.description,
               styleSheet: MarkdownStyleSheet(
                 p: const TextStyle(fontSize: 16.0),
               ),
@@ -92,7 +124,7 @@ Future<void> getProfileModel() async {
             ),
             const SizedBox(height: 8.0),
             Text(
-              widget.project.posterAbout,
+              project.posterAbout,
               style: const TextStyle(fontSize: 16.0),
             ),
             const SizedBox(height: 24.0),
@@ -100,9 +132,10 @@ Future<void> getProfileModel() async {
               alignment: Alignment.center,
               child: ElevatedButton(
                 onPressed: () {
-                  if (profileInfoModel.hasProfile! && email != widget.project.posterEmail) {
+                  if (_hasProfile && email != project.posterEmail) {
                     _showMessageDialog(context);
-                  } else if (email == widget.project.posterEmail) {
+                    
+                  } else if (email == project.posterEmail) {
                     showErrorDialog("You can't message yourself");
                   } else {
                     showProfileDialog("You can't message the poster without creating a profile.");
@@ -113,6 +146,8 @@ Future<void> getProfileModel() async {
               ),
             )
           ],
+        );
+          },
         ),
       ),
       ),
@@ -123,15 +158,17 @@ Future<void> getProfileModel() async {
     
     final message = {
       "message_id": const Uuid().v4(),
-      "sender_name": _profileInfoModel.name,
+      "sender_name": _name,
       "sender_email": email,
-      "receiver_name": widget.project.posterName,
-      "receiver_email": widget.project.posterEmail,
+      "receiver_name": project.posterName,
+      "receiver_email": project.posterEmail,
       "message": _messageController.text.trim(),
       "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
       "status": "pending",
     };
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
     final messagesModel = Provider.of<MessagesModel>(context, listen: false);
     final result = await sendMessageData(messagesModel, message, email!);
 
@@ -140,7 +177,8 @@ Future<void> getProfileModel() async {
     } else {
       showStatusDialog("Message not sent, will be sent when the server is reachable.");
     }
-    _messageController.clear();
+    });
+   _messageController.clear();
   }
 
   void _showMessageDialog(BuildContext context) {
@@ -160,7 +198,7 @@ Future<void> getProfileModel() async {
                 context.pop();
               },
             ),
-            title: Text('Message ${widget.project.posterName}'),
+            title: Text('Message ${project.posterName}'),
           ),
           body: Column(
             children: [
@@ -185,7 +223,7 @@ Future<void> getProfileModel() async {
                   onPressed: () {
                     if (_messageController.text.trim().isNotEmpty) {
                       _sendMessage();
-                    }
+                    } 
                   },
                   child: const Text('Send'),
                 ),
@@ -207,7 +245,7 @@ Future<void> getProfileModel() async {
           actions: [
             ElevatedButton(
               onPressed: () {
-                context.pushNamed("inbox", pathParameters: {'currentUserName': _profileInfoModel.name!, 'currentUserEmail': email!});
+                context.pushNamed("inbox", pathParameters: {'currentUserName': _name!, 'currentUserEmail': email!});
               },
               child: const Text('OK'),
             ),
@@ -259,3 +297,4 @@ Future<void> getProfileModel() async {
   }
   
 }
+

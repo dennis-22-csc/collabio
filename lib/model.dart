@@ -1,7 +1,7 @@
 import 'package:collabio/database.dart';
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:collabio/util.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Project {
   final String id;
@@ -26,7 +26,7 @@ class Project {
     this.matchPercentage = 0.0,
   });
 
-   @override
+  @override
   String toString() {
     return 'Project{'
         'project_id: $id, '
@@ -39,6 +39,7 @@ class Project {
         'poster_about: $posterAbout'
         '}';
   }
+
   factory Project.fromMap(Map<String, dynamic> map) {
     List<String> tagsList = List<String>.from(map['tags']);
 
@@ -65,6 +66,19 @@ class Project {
       DatabaseHelper.columnPosterAbout: posterAbout,
     };
   }
+
+  static Project dbMapToProject(Map<String, dynamic> map) {
+  return Project(
+    id: map[DatabaseHelper.columnProjectId],
+    title: map[DatabaseHelper.columnTitle],
+    timestamp: map[DatabaseHelper.columnTimestamp],
+    description: map[DatabaseHelper.columnDescription],
+    tags: map[DatabaseHelper.columnTags].split(','), // Convert the comma-separated string back to a list
+    posterName: map[DatabaseHelper.columnPosterName],
+    posterEmail: map[DatabaseHelper.columnPosterEmail],
+    posterAbout: map[DatabaseHelper.columnPosterAbout],
+  );
+}
 
 }
 
@@ -166,12 +180,15 @@ class ProfileInfoModel extends ChangeNotifier {
   String? lastName;
   String? about;
   List<String>? tags;
-  String? persistedFilePath; 
-  File? profilePicture;
-  bool? hasProfile;
-  bool? sentToken;
+  String? persistedFilePath;
+  bool hasProfile = false;
+  bool sentToken = false;
   String? myToken;
   String? name;
+  bool isLogOutUser = false;
+  bool isLogInUser = false;
+  bool forgotPassword = false;
+  User? user;
 
   Future<void> updateProfileInfo() async {
     hasProfile = await SharedPreferencesUtil.hasProfile();
@@ -181,14 +198,10 @@ class ProfileInfoModel extends ChangeNotifier {
     about = await SharedPreferencesUtil.getAbout();
     tags = await SharedPreferencesUtil.getTags();
     persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
-    if (persistedFilePath != null) {
-      File existingProfilePicture = File(persistedFilePath!);
-      if (existingProfilePicture.existsSync()) {
-        profilePicture = existingProfilePicture;
-      }
-    }
     sentToken = await SharedPreferencesUtil.sentToken();
     myToken = await SharedPreferencesUtil.getToken();
+    isLogOutUser = await SharedPreferencesUtil.isLogOut();
+    isLogInUser = await SharedPreferencesUtil.isLogIn();
     notifyListeners();
   }
 
@@ -210,14 +223,8 @@ class ProfileInfoModel extends ChangeNotifier {
     tags = await SharedPreferencesUtil.getTags();
     notifyListeners();
   }
-  Future<void> updateProfilePicture() async {
+  Future<void> updatePersistedPicturePath() async {
     persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
-    if (persistedFilePath != null) {
-      File existingProfilePicture = File(persistedFilePath!);
-      if (existingProfilePicture.existsSync()) {
-        profilePicture = existingProfilePicture;
-      }
-    }
     notifyListeners();
   }
   Future<void> updateSentToken() async {
@@ -226,6 +233,32 @@ class ProfileInfoModel extends ChangeNotifier {
   }
   Future<void> updateMyToken() async {
     myToken = await SharedPreferencesUtil.getToken();
+    notifyListeners();
+  }
+  
+  void updateLogOutUserStatusTemp(bool status) {
+    isLogOutUser = status;
+    notifyListeners();
+  }
+  void updateLogOutUserStatus() async {
+    isLogOutUser = await SharedPreferencesUtil.isLogOut();
+    notifyListeners();
+  }
+  void updateLogInUserStatusTemp(bool status) {
+    isLogInUser = status;
+    notifyListeners();
+  }
+  void updateLogInUserStatus() async {
+    isLogInUser = await SharedPreferencesUtil.isLogIn();
+    notifyListeners();
+  }
+  void updateForgotPasswordTemp(bool status) {
+    forgotPassword = status;
+    notifyListeners();
+  }
+  
+  void updateUserTemp(User? currentUser) {
+    user = currentUser;
     notifyListeners();
   }
 }

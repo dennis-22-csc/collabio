@@ -7,12 +7,12 @@ import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 
-class ChatScreen extends StatelessWidget {
+class ChatScreen extends StatefulWidget {
   final String currentUserName;
   final String currentUserEmail;
   final String otherPartyName;
   final String otherPartyEmail;
-
+  
   const ChatScreen({
     Key? key,
     required this.currentUserName,
@@ -21,11 +21,40 @@ class ChatScreen extends StatelessWidget {
     required this.otherPartyEmail,
   }) : super(key: key);
 
-  
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  late MessagesModel messagesModel;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+  void _sendMessage(BuildContext context, String text) async {
+    if (text.trim().isNotEmpty) {
+      final message = {
+      "message_id": const Uuid().v4(),
+      "sender_name": widget.currentUserEmail,
+      "sender_email": widget.currentUserEmail,
+      "receiver_name": widget.otherPartyName,
+      "receiver_email": widget.otherPartyEmail,
+      "message": text,
+      "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
+        .format(DateTime.now()),
+      "status": "pending",
+    };
+    
+    sendMessageData(messagesModel, message, widget.currentUserEmail);
+  }
+
+  } 
+
   @override
   Widget build(BuildContext context) {
-    final messagesModel = Provider.of<MessagesModel>(context);
-    final messages = messagesModel.groupedMessages[otherPartyEmail] ?? [];
+    messagesModel = Provider.of<MessagesModel>(context);
+    final messages = messagesModel.groupedMessages[widget.otherPartyEmail] ?? [];
 
     List<String> oldestMessageIds = Util.getOldestMessageIdsGroupedBy24Hours(messages);
 
@@ -38,7 +67,7 @@ class ChatScreen extends StatelessWidget {
               context.pop();
             },
           ),
-        title: Text(otherPartyName),
+        title: Text(widget.otherPartyName),
       ),
       body: Column(
         children: [
@@ -96,7 +125,7 @@ String _getSeparatorText(String timestamp) {
 
 
   Widget _buildMessage(BuildContext context, Message message) {
-  final isCurrentUserMessage = message.senderEmail == currentUserEmail;
+  final isCurrentUserMessage = message.senderEmail == widget.currentUserEmail;
   
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -202,8 +231,8 @@ String _getSeparatorText(String timestamp) {
           icon: const Icon(Icons.send),
           onPressed: () {
             if (textController.text.trim().isNotEmpty) {
-              textController.clear();
               _sendMessage(context, textController.text.trim());
+              textController.clear();
             } 
           },
         ),
@@ -211,27 +240,6 @@ String _getSeparatorText(String timestamp) {
     ),
   );
 }
-
-  void _sendMessage(BuildContext context, String text) async {
-    if (text.trim().isNotEmpty) {
-      final message = {
-      "message_id": const Uuid().v4(),
-      "sender_name": currentUserName,
-      "sender_email": currentUserEmail,
-      "receiver_name": otherPartyName,
-      "receiver_email": otherPartyEmail,
-      "message": text,
-      "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
-        .format(DateTime.now()),
-      "status": "pending",
-    };
-    
-    final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-    await sendMessageData(messagesModel, message, currentUserEmail);
-    
-  }
-
-  } 
 
   Widget buildMessageStatusIcon(String status) {
   switch (status) {

@@ -292,6 +292,9 @@ Future<String> updateProfileSection(String email, String title, dynamic content)
       data['about'] = content;
     case 'Skills':
       data['tags'] = content;
+      break;
+    case 'Profile Picture':
+      data['picture_uri'] = content;
     default:
       break;
   }

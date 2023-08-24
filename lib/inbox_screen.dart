@@ -16,60 +16,74 @@ class InboxScreen extends StatefulWidget {
 }
 
 class _InboxScreenState extends State<InboxScreen> {
+  
   @override
   void initState() {
     super.initState();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Future<Map<String, List<Message>>> getMessages() async {
     final messagesModel = Provider.of<MessagesModel>(context);
-    final groupedMessages = messagesModel.groupedMessages;
-    final sortedKeys = groupedMessages.keys.toList()
-      ..sort((a, b) {
-        final mostRecentMessageA = groupedMessages[a]!.first;
-        final mostRecentMessageB = groupedMessages[b]!.first;
-        return mostRecentMessageB.timestamp.compareTo(mostRecentMessageA.timestamp);
-      });
-
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              context.goNamed("projects");
-            },
-          ),
-        title: const Text('Inbox'),
-      ),
-      body: groupedMessages.isEmpty
-          ? const Center(
-              child: Text("No messages in inbox"),
-            )
-          : ListView.builder(
-              itemCount: sortedKeys.length,
-              itemBuilder: (context, index) {
-                
-                final groupKey = sortedKeys[index];
-                final messages = groupedMessages[groupKey]!;
-                final mostRecentMessage = messages.first;
-                String otherPartyName = "unknown";
-                String senderName = mostRecentMessage.senderName.trim();
-                String receiverName = mostRecentMessage.receiverName.trim();
-                String userName = widget.currentUserName.trim();
-                if (Util.areEquivalentStrings(senderName, userName)) {
-                  // If the current user is the sender, then the other party is the receiver
-                  otherPartyName = receiverName;
-                } else if (Util.areEquivalentStrings(receiverName, userName)) {
-                  // If the current user is the receiver, then the other party is the sender
-                  otherPartyName = senderName;
-                }
-                return _buildConversationCard(mostRecentMessage: mostRecentMessage, otherPartyName: otherPartyName, groupKey: groupKey);
-              },
-            ),
-    );
+    return messagesModel.groupedMessages;
   }
-  
+
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () {
+          context.goNamed("projects");
+        },
+      ),
+      title: const Text('Inbox'),
+    ),
+    body: FutureBuilder<Map<String, List<Message>>>(
+      future: getMessages(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        } else if (snapshot.hasError) {
+          return Center(
+            child: Text("Error: ${snapshot.error}"),
+          );
+        } else if (snapshot.data == null || snapshot.data!.isEmpty) {
+          return const Center(
+            child: Text("No messages in inbox"),
+          );
+        } else {
+          final messages = snapshot.data!;
+          final sortedKeys = messages.keys.toList()
+            ..sort((a, b) {
+              final mostRecentMessageA = messages[a]!.first;
+              final mostRecentMessageB = messages[b]!.first;
+              return mostRecentMessageB.timestamp.compareTo(mostRecentMessageA.timestamp);
+            });
+
+          return ListView.builder(
+            itemCount: sortedKeys.length,
+            itemBuilder: (context, index) {
+              final groupKey = sortedKeys[index];
+              final messagesForGroup = messages[groupKey]!;
+              final mostRecentMessage = messagesForGroup.first;
+              String currentUserName = widget.currentUserName.trim();
+              final otherPartyName = getOtherPartyName(mostRecentMessage, currentUserName); // Replace with your logic
+              return _buildConversationCard(
+                mostRecentMessage: mostRecentMessage,
+                otherPartyName: otherPartyName,
+                groupKey: groupKey,
+              );
+            },
+          );
+        }
+      },
+    ),
+  );
+}
+
   Widget _buildConversationCard({required Message mostRecentMessage, required otherPartyName, required String groupKey}) {
   return ListTile(
   leading: CircleAvatar(
@@ -174,6 +188,21 @@ Widget buildMessageStatusIcon(String status) {
   }
 }
 
+String getOtherPartyName(Message message, String currentUserName) {
+  final senderName = message.senderName.trim();
+  final receiverName = message.receiverName.trim();
+
+  if (Util.areEquivalentStrings(senderName, currentUserName)) {
+    // If the current user is the sender, the other party is the receiver
+    return receiverName;
+  } else if (Util.areEquivalentStrings(receiverName, currentUserName)) {
+    // If the current user is the receiver, the other party is the sender
+    return senderName;
+  } else {
+    // If neither sender nor receiver is the current user, return "John Doe"
+    return "John Doe";
+  }
+}
 
 
 }

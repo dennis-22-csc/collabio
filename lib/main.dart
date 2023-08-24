@@ -26,16 +26,18 @@ import 'package:collabio/chat_screen.dart';
 
 void main() async {
   late bool hasInternet;
-  late bool loggedOut;
   String? email;
   User? user;
+  late bool isLogOutUser;
+  late bool isLoginUser;
 
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
             statusBarColor: Color(0xFFEBDDFF),
   ));
   hasInternet = await Util.checkInternetConnection();
-  loggedOut = await SharedPreferencesUtil.isLoggedOut();
+  isLogOutUser = await SharedPreferencesUtil.isLogOut();
+  isLoginUser = await SharedPreferencesUtil.isLogIn();
   
   if (hasInternet) {
     await Util.initializeFirebase();
@@ -46,7 +48,12 @@ void main() async {
       SharedPreferencesUtil.saveToken(token);
     });
 
+    if (isLogOutUser) {
+      await auth.signOut();
+    }
+
     if (auth.currentUser != null) {
+      
       await auth.currentUser!.reload();
       user = auth.currentUser;
 
@@ -67,7 +74,7 @@ void main() async {
           ChangeNotifierProvider<ProjectsModel>(create: (context) => ProjectsModel()),
           ChangeNotifierProvider<ProfileInfoModel>(create:(context) => ProfileInfoModel()),
         ],
-        child: MyApp(key: UniqueKey(), hasInternet: hasInternet, isLoggedOut: loggedOut, user: user, email: email,),
+        child: MyApp(key: UniqueKey(), hasInternet: hasInternet, isLogOutUser: isLogOutUser, isLoginUser: isLoginUser, user: user, email: email,),
       ),
     ),
   );
@@ -76,12 +83,12 @@ void main() async {
 
 class MyApp extends StatefulWidget {
   final bool hasInternet; 
-  final bool isLoggedOut;
   final String? email;
   final User? user;
+  final bool isLogOutUser; 
+  final bool isLoginUser; 
 
-   
-  const MyApp({Key? key, required this.hasInternet, required this.isLoggedOut, required this.user, required this.email }) : super(key: key);
+  const MyApp({Key? key, required this.hasInternet, required this.isLogOutUser, required this.isLoginUser,  this.user, required this.email }) : super(key: key);
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -95,7 +102,9 @@ class _MyAppState extends State<MyApp> {
   bool _hasProfile = false;
   bool _sentToken = false;
   late String _token; 
- 
+  String? _name;
+  String? _email;
+
   @override
   void initState() {
     super.initState();
@@ -104,6 +113,7 @@ class _MyAppState extends State<MyApp> {
     } else if (widget.user != null){
       syncData();
     }
+    
   }
 
   Future<void> syncData() async {
@@ -121,11 +131,16 @@ Future<void> getProfileInfo() async {
     bool myProfile = await SharedPreferencesUtil.hasProfile();
     bool sentToken = await SharedPreferencesUtil.sentToken();
     String myToken = await SharedPreferencesUtil.getToken();
-
+    final firstName = await SharedPreferencesUtil.getFirstName();
+    final lastName = await SharedPreferencesUtil.getLastName();
+    final name = '$firstName $lastName';
+    
     setState(() {
       _hasProfile = myProfile;
       _sentToken = sentToken;
       _token = myToken;
+      _name = name;
+      _email = widget.user?.email;
     });
   }
   
@@ -144,16 +159,17 @@ Future<void> getProfileInfo() async {
           await SharedPreferencesUtil.setSentToken(false);
         }
       } 
-      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
       final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
       await profileInfoModel.updateProfileInfo();
-      
+      });
+
       final projectResult = await fetchProjectsFromApi();
       final List<String> receivedMessageIds = await DatabaseHelper.getMessageIdsWithStatus("received");
 
       if (projectResult is List<Project>) {
         await DatabaseHelper.insertProjects(projectResult);
-        List<String> tags = (await SharedPreferencesUtil.getTags()) ?? ["mobile app development", "web development"];
+        List<String> tags = (await SharedPreferencesUtil.getTags());
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
           projectsModel.updateProjects(tags, 10);
@@ -174,7 +190,7 @@ Future<void> getProfileInfo() async {
           return;
         }
 
-        if (!mounted) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
         //Get initial messages from local database
         final messagesModel = Provider.of<MessagesModel>(context, listen: false);
         messagesModel.updateGroupedMessages(widget.email!);
@@ -189,7 +205,7 @@ Future<void> getProfileInfo() async {
             await sendMessageData(messagesModel, message, widget.email!);
           }
         }
-
+        });
       }
 
       if (receivedMessageIds.isNotEmpty) {
@@ -216,31 +232,52 @@ Future<void> getProfileInfo() async {
 
   @override
   Widget build(BuildContext context) {
+    final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
+    profileInfoModel.updateLogOutUserStatusTemp(widget.isLogOutUser);
+    profileInfoModel.updateLogInUserStatusTemp(widget.isLoginUser);
+    profileInfoModel.updateUserTemp(widget.user);
+
     appTheme = ThemeData(
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       useMaterial3: true,
     );
 
     final goRouter = GoRouter(
+      refreshListenable: profileInfoModel,
+      initialLocation: '/',
+      redirect: (context, state) {
+        
+        // Check if an error occurred
+        if (_errorOccurred) return null; // No redirect needed, show the error screen in the current route.
+        
+        if (profileInfoModel.user == null) {
+          if (profileInfoModel.isLogOutUser && !profileInfoModel.forgotPassword) return '/login'; // Redirect to the login screen.
+          
+          if (!profileInfoModel.isLogOutUser && !profileInfoModel.forgotPassword) return '/registration'; // Redirect to the registration screen.
+
+          if (profileInfoModel.forgotPassword) return "/password-reset";
+        
+        }
+         
+        if (profileInfoModel.user?.email == null) return '/registration'; // Redirect to the registration screen.
+          
+        if (profileInfoModel.user?.emailVerified == false) return '/email-verification'; // Redirect to the email verification screen.
+        
+        if (profileInfoModel.user?.emailVerified == true && !profileInfoModel.isLogInUser) return '/login'; // Redirect to the login screen.
+
+        // Check if network operation is not completed
+        if (!_networkOperationCompleted) return null; // No redirect needed, stay on the current route.
+
+        // Default case, no need to redirect
+        return null;
+      },
+
       routes: [
         GoRoute(
           path: '/',
           builder: (context, state) {
             if (_errorOccurred) {
               return _buildErrorScreen();
-            }
-            if (widget.user == null) {
-              if (widget.isLoggedOut == true) {
-                return const LoginScreen();
-              } else {
-                return const RegistrationScreen();
-              }
-            } else {
-              if (widget.user?.email == null) {
-                return const RegistrationScreen();
-              } else if (widget.user?.emailVerified == false) {
-                return const LoginScreen();
-              }
             }
             if (!_networkOperationCompleted) {
               return _buildLoadingIndicator();
@@ -293,6 +330,20 @@ Future<void> getProfileInfo() async {
           },
         ),
         GoRoute(
+          name: "view-matching-project",
+          path: '/view-matching-project/:id',
+          builder: (context, state) {
+            if (_errorOccurred) {
+              return _buildErrorScreen();
+            }
+            if (!_networkOperationCompleted) {
+              return _buildLoadingIndicator();
+            }
+            final projectId = state.pathParameters["id"] as String;
+            return ViewProjectScreen(projectId: projectId,);
+          },
+        ),
+        GoRoute(
           name: "post-project",
           path: '/post-project',
           pageBuilder: (context, state) => MaterialPage<void>(
@@ -317,14 +368,30 @@ Future<void> getProfileInfo() async {
           ),
         ),
         GoRoute(
+          name: "view-inbox",
+          path: '/view-inbox',
+          builder: (context, state) {
+            if (_errorOccurred) {
+              return _buildErrorScreen();
+            }
+            if (!_networkOperationCompleted) {
+              return _buildLoadingIndicator();
+            }
+            if (!_hasProfile) {
+              return const MyProjectPage();
+            }
+            
+            return InboxScreen(currentUserName: _name!, currentUserEmail: _email!);
+          },
+        ),
+        GoRoute(
           name: "email-verification",
           path: '/email-verification',
           pageBuilder: (context, state) {
-            final User user = state.extra as User;
-            final emailVerificationScreen = EmailVerificationScreen.withUser(user: user);
+            
             return MaterialPage<void>(
               key: state.pageKey,
-              child: emailVerificationScreen,
+              child: const EmailVerificationScreen(),
             );
           },
         ),

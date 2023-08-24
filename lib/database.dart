@@ -246,4 +246,20 @@ static Future<List<Map<String, dynamic>>> getUnsentMessages() async {
   });
 }
 
+static Future<dynamic> getProjectById(String projectId) async {
+  final db = await _database;
+
+  final maps = await db.query(
+    _projectsTable,
+    where: '$columnProjectId = ?',
+    whereArgs: [projectId],
+  );
+
+  if (maps.isNotEmpty) {
+    return Project.dbMapToProject(maps.first);
+  } else {
+    return 'Project not found';
+  }
+}
+
 }

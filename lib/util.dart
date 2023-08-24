@@ -58,6 +58,7 @@ static Map<String, dynamic> convertJsonToUserInfo(Map<String, dynamic> jsonData)
     'lastName': jsonData['last_name'],
     'about': jsonData['about'],
     'tags': tagsList,
+    'pictureUri': jsonData['picture_uri'],
   };
 }
 
@@ -67,6 +68,7 @@ static Future<String> saveProfileInformation({
     required String about,
     required String email,
     required List<String> tags,
+    required String pictureUri,
   }) async {
     Map<String, dynamic> userData = {
         'first_name': firstName,
@@ -74,14 +76,14 @@ static Future<String> saveProfileInformation({
         'email': email,
         'about': about,
         'tags': tags,
-        
+        'picture_uri': pictureUri,
       };
     
     String result = await sendUserData(userData);
     return result;
   }
 
-   static Future<bool> _requestPermission(Permission permission) async {
+  static Future<bool> requestPermission(Permission permission) async {
     if (await permission.isGranted) {
       return true;
     } else {
@@ -131,9 +133,7 @@ static Future<bool> saveProfilePicture(File profilePicture) async {
 
     File saveFile = File("${directory.path}/${profilePicture.path.split('/').last}");
     await profilePicture.copy(saveFile.path);
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('profile_picture', saveFile.path);
-
+    await SharedPreferencesUtil.saveProfilePicturePath(saveFile.path);
     return true;
   }
 
@@ -142,7 +142,7 @@ static Future<bool> saveProfilePicture(File profilePicture) async {
 
    static Future<bool> checkAndCreateDirectory(BuildContext context) async {
      if (Platform.isAndroid) {
-       if (await _requestPermission(Permission.storage)) {
+       if (await requestPermission(Permission.storage)) {
          Directory? directory = await getExternalStorageDirectory();
          if (directory != null) {
            String newPath = "${directory.path}/Collabio/profile_picture";
@@ -276,27 +276,36 @@ class SharedPreferencesUtil {
     await prefs.setBool('sentToken', sentToken);
   }
 
-  static Future<void> setLoggedOut(bool isLoggedOut) async {
+  static Future<void> setLogOutStatus(bool status) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedOut', isLoggedOut);
+    await prefs.setBool('logout', status);
+  }
+  static Future<void> setLogInStatus(bool status) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('login', status);
   }
 
   static Future<void> saveToken(String token) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('firebase_token', token);
   }
-
+  static Future<void> saveProfilePicturePath(String pictureUri) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('profile_picture', pictureUri);
+  }
   static Future<void> setUserInfo(Map<String, dynamic> userInfo) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? firstName = userInfo['firstName'];
-    String? lastName = userInfo['lastName'];
-    String? about = userInfo['about'];
-    List<String>? tags = userInfo['tags'];
+    String firstName = userInfo['firstName'];
+    String lastName = userInfo['lastName'];
+    String about = userInfo['about'];
+    List<String> tags = userInfo['tags'];
+    String pictureUri = userInfo['pictureUri'];
 
-    await prefs.setString('firstName', firstName ?? '');
-    await prefs.setString('lastName', lastName ?? '');
-    await prefs.setString('about', about ?? '');
-    await prefs.setStringList('tags', tags ?? []);
+    await prefs.setString('firstName', firstName);
+    await prefs.setString('lastName', lastName);
+    await prefs.setString('about', about);
+    await prefs.setStringList('tags', tags);
+    await prefs.setString('profile_picture', pictureUri);
   }
   static updateUserInfo(String title, dynamic content) async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -311,6 +320,8 @@ class SharedPreferencesUtil {
           await prefs.setString('about', content);
         case 'Skills':
           await prefs.setStringList('tags', content);
+        case 'Profile Picture':
+          await prefs.setStringList('profile_picture', content);
         default:
           break;
       }
@@ -323,34 +334,39 @@ class SharedPreferencesUtil {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getBool('sentToken') ?? false;
   }
-  static Future<bool> isLoggedOut() async {
+  static Future<bool> isLogOut() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('isLoggedOut') ?? false;
+    return prefs.getBool('logout') ?? false;
   }
 
-  static Future<String?> getPersistedFilePath() async {
+  static Future<bool> isLogIn() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('profile_picture');
+    return prefs.getBool('login') ?? false;
   }
 
-  static Future<String?> getFirstName() async {
+  static Future<String> getPersistedFilePath() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('firstName');
+    return prefs.getString('profile_picture')!;
   }
 
-  static Future<String?> getLastName() async {
+  static Future<String> getFirstName() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('lastName');
+    return prefs.getString('firstName')!;
   }
 
-  static Future<String?> getAbout() async {
+  static Future<String> getLastName() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('about');
+    return prefs.getString('lastName')!;
   }
 
-  static Future<List<String>?> getTags() async {
+  static Future<String> getAbout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList('tags');
+    return prefs.getString('about')!;
+  }
+
+  static Future<List<String>> getTags() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList('tags') ?? ["mobile app development", "web development"];
   }
 
   static Future<String> getToken() async {

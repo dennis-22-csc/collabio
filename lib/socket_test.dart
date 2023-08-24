@@ -177,7 +177,7 @@ void main() async {
     "sender_name": "Alimat Sadiat",
     "sender_email": "alimatsadiat@gmail.com",
     "receiver_name": "Dennis Akpotaire",
-    "receiver_email": "dennisthebusinessguru@gmail.com",
+    "receiver_email": "dennisakpotaire@gmail.com",
     "message": "Okay Dennis.",
     "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
@@ -227,7 +227,7 @@ The target audience for the platform is students and professionals seeking to en
 If you are passionate about education and technology, please reach out to me to discuss further.
     ''',
     'tags': ['Web Development', 'Education', 'Online Learning', 'Video Streaming'],
-    'poster_name': 'Alimat',
+    'poster_name': 'Alimat Sadiat',
     'poster_email': 'alimatsadiat@gmail.com',
     'poster_about': 'A developer',
 };
@@ -251,8 +251,8 @@ The target audience for the app is individuals who want to take control of their
 
 If you are interested in contributing to this app and helping people achieve their financial goals, please send me a message.
     ''',
-    'tags': ['Mobile App Development', 'Personal Finance', 'iOS', 'Android'],
-    'poster_name': 'Ola',
+    'tags': ['Mobile App Development', 'Personal Finance', 'Android'],
+    'poster_name': 'Ola Smith',
     'poster_email': 'olasmith@gmail.com',
     'poster_about': 'A designer',
 };
@@ -276,7 +276,7 @@ The target audience for the platform is individuals looking to connect with othe
 If you are interested in joining this exciting project, please get in touch with me.
     ''',
     'tags': ['Web Development', 'Social Networking', 'Frontend', 'Backend'],
-    'poster_name': 'Rachel',
+    'poster_name': 'Rachel Oniga',
     'poster_email': 'racheloniga@gmail.com',
     'poster_about': 'A programmer',
 } , {
@@ -300,7 +300,7 @@ The target audience for the platform is students and professionals seeking to en
 If you are passionate about education and technology, please reach out to me to discuss further.
     ''',
     'tags': ['Web Development', 'Education', 'Online Learning', 'Video Streaming'],
-    'poster_name': 'Alimat',
+    'poster_name': 'Alimat Sadiat',
     'poster_email': 'alimatsadiat@gmail.com',
     'poster_about': 'A developer',
 }, {
@@ -324,17 +324,17 @@ The target audience for the app is individuals who want to take control of their
 If you are interested in contributing to this app and helping people achieve their financial goals, please send me a message.
     ''',
     'tags': ['Mobile App Development', 'Personal Finance', 'iOS', 'Android'],
-    'poster_name': 'Ola',
+    'poster_name': 'Ola Smith',
     'poster_email': 'olasmith@gmail.com',
     'poster_about': 'A designer',
 }
 ];
 
- final messageResponse = await dataSender.sendMessageData(message);
- print(messageResponse);
+ //final messageResponse = await dataSender.sendMessageData(message);
+ //print(messageResponse);
   
-  //final projectResponse = await dataSender.sendProjectData(project2);
-  //print('Project response: $projectResponse');
+  final projectResponse = await dataSender.sendProjectData(project3);
+  print('Project response: $projectResponse');
 
   //final userResponse = await dataSender.fetchUserInfoFromApi("denniskoko@gmail.com");
   //print('User Response: $userResponse');

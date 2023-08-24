@@ -8,6 +8,7 @@ import 'package:collabio/general_profile_edit.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:collabio/model.dart';
+import 'package:collabio/network_handler.dart';
 
 class ProfileSection {
   String title;
@@ -142,7 +143,7 @@ class ProfileSectionScreen extends StatefulWidget {
 
 class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
   late ProfileInfoModel _profileInfoModel;
-
+  String? _email;
   final List<ProfileSection> sections = [
     ProfileSection(title: 'First Name', content: '', tags: []),
     ProfileSection(title: 'Last Name', content: '', tags: []),
@@ -153,9 +154,12 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
   @override
   void initState() {
     super.initState();
+    User user = FirebaseAuth.instance.currentUser!; 
+    _email = user.email;
   }
 
   void selectProfilePicture() async {
+    try {
     bool directoryExists = await Util.checkAndCreateDirectory(context);
 
     if (directoryExists) {
@@ -166,10 +170,36 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
 
         bool saved = await Util.saveProfilePicture(newProfilePicture);
         if (saved) {
-          _profileInfoModel.updateProfilePicture();
+          String? pictureUri = await SharedPreferencesUtil.getPersistedFilePath();
+      
+          final result = await updateProfileSection(_email!, "Profile Picture", pictureUri);
+          if (result == "Profile section Profile Picture updated successfully") {
+             _profileInfoModel.updatePersistedPicturePath();
+          } else {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Could not connect to server")),
+            );
+            });
+            SharedPreferencesUtil.saveProfilePicturePath('');
+          }
         }
       }
+    } 
+    } catch (error) {
+      showStatusDialog("Upload Error", error.toString());
     }
+  }
+
+  FileImage buildProfilePicture (String persistedFilePath) {
+    late FileImage profilePicture;
+
+    File existingProfilePicture = File(persistedFilePath);
+    if (existingProfilePicture.existsSync()) {
+      profilePicture = FileImage(existingProfilePicture);
+    }
+  
+    return profilePicture;
   }
 
   @override
@@ -199,7 +229,7 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
                 children: [
                   CircleAvatar(
                     radius: 80,
-                    backgroundImage: profileInfoModel.profilePicture == null ? null : FileImage(profileInfoModel.profilePicture!),
+                    backgroundImage: profileInfoModel.persistedFilePath == null ? null : buildProfilePicture(profileInfoModel.persistedFilePath!),
                     child: Stack(
                       children: [
                         Align(
@@ -221,6 +251,24 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
       );
   }
 
- 
+  void showStatusDialog(String title, String content){
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Hi there'),
+          content: Text(content),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                 context.pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
