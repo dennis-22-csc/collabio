@@ -182,6 +182,7 @@ Widget build(BuildContext context) {
 
     if (!_login) {
       return MaterialApp(
+        debugShowCheckedModeBanner: false,
         theme: appTheme,
         home: buildLoginScreen(),
       );
@@ -191,6 +192,7 @@ Widget build(BuildContext context) {
     if (_errorOccurred) return _buildErrorScreen();
             
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: appTheme,
       home: const MyProjectPage(),
       );
@@ -290,6 +292,7 @@ Widget buildLoginScreen() {
 
 Widget _buildLoadingIndicator() {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: appTheme,
       home: const Scaffold(
         backgroundColor: Color(0xFFEBDDFF),
@@ -315,6 +318,7 @@ Widget _buildLoadingIndicator() {
 
   Widget _buildErrorScreen() {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: appTheme,
       home: Scaffold(
         body: Center(

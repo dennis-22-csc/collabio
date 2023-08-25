@@ -48,9 +48,9 @@ void main() async {
       SharedPreferencesUtil.saveToken(token);
     });
 
-    if (isLogOutUser) {
+    /*if (isLogOutUser) {
       await auth.signOut();
-    }
+    }*/
 
     if (auth.currentUser != null) {
       
@@ -104,7 +104,7 @@ class _MyAppState extends State<MyApp> {
   late String _token; 
   String? _name;
   String? _email;
-
+late String location;
   @override
   void initState() {
     super.initState();
@@ -174,6 +174,7 @@ Future<void> getProfileInfo() async {
           final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
           projectsModel.updateProjects(tags, 10);
         });
+        _showError(location);
       } else {
         _showError("Unable to fetch dependencies at the moment.");
         //_showError(projectResult);
@@ -246,7 +247,7 @@ Future<void> getProfileInfo() async {
       refreshListenable: profileInfoModel,
       initialLocation: '/',
       redirect: (context, state) {
-        
+         
         // Check if an error occurred
         if (_errorOccurred) return null; // No redirect needed, show the error screen in the current route.
         
@@ -257,14 +258,15 @@ Future<void> getProfileInfo() async {
 
           if (profileInfoModel.forgotPassword) return "/password-reset";
         
-        }
+        } else {
          
-        if (profileInfoModel.user?.email == null) return '/registration'; // Redirect to the registration screen.
+          if (profileInfoModel.user?.email == null) return '/registration'; // Redirect to the registration screen.
           
-        if (profileInfoModel.user?.emailVerified == false) return '/email-verification'; // Redirect to the email verification screen.
+          if (profileInfoModel.user?.emailVerified == false) return '/email-verification'; // Redirect to the email verification screen.
         
-        if (profileInfoModel.user?.emailVerified == true && !profileInfoModel.isLogInUser) return '/login'; // Redirect to the login screen.
+          if (profileInfoModel.user?.emailVerified == true && !profileInfoModel.isLogInUser && !profileInfoModel.isLogOutUser) return '/login'; // Redirect to the login screen.
 
+         }
         // Check if network operation is not completed
         if (!_networkOperationCompleted) return null; // No redirect needed, stay on the current route.
 
@@ -276,6 +278,8 @@ Future<void> getProfileInfo() async {
         GoRoute(
           path: '/',
           builder: (context, state) {
+            location = GoRouterState.of(context).uri.toString();
+  
             if (_errorOccurred) {
               return _buildErrorScreen();
             }
@@ -371,6 +375,8 @@ Future<void> getProfileInfo() async {
           name: "view-inbox",
           path: '/view-inbox',
           builder: (context, state) {
+            location = GoRouterState.of(context).uri.toString();
+  
             if (_errorOccurred) {
               return _buildErrorScreen();
             }
@@ -415,6 +421,7 @@ Future<void> getProfileInfo() async {
     );
 
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       theme: appTheme,
       routeInformationProvider: goRouter.routeInformationProvider,
       routerDelegate: goRouter.routerDelegate,
@@ -425,6 +432,7 @@ Future<void> getProfileInfo() async {
 
   Widget _buildLoadingIndicator() {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: appTheme,
       home: const Scaffold(
         backgroundColor: Color(0xFFEBDDFF),
@@ -450,6 +458,7 @@ Future<void> getProfileInfo() async {
 
   Widget _buildErrorScreen() {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: appTheme,
       home: Scaffold(
         body: Center(

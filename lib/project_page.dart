@@ -50,6 +50,17 @@ class _MyProjectPageState extends State<MyProjectPage> {
   
   }
   
+  Future<void> logUserOut() async {
+    await FirebaseAuth.instance.signOut();
+    User? currentUser = FirebaseAuth.instance.currentUser;
+    await currentUser?.reload();
+
+    if (currentUser == null) {
+      SharedPreferencesUtil.setLogOutStatus(true);
+      profileInfoModel.updateLogOutUserStatus();
+      profileInfoModel.updateUserTemp(currentUser);
+    }
+  }
   FileImage buildProfilePicture (String persistedFilePath) {
     late FileImage profilePicture;
      
@@ -107,8 +118,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
   ListTile(
     title: const Text('Log Out'),
     onTap: () {
-      context.pushNamed("login");
-      SharedPreferencesUtil.setLogOutStatus(true);
+      logUserOut();
     },
   ),
   ListTile(

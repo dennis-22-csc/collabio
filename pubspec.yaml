@@ -1,7 +1,7 @@
 name: collabio
 description: A platform to enable developers and designers to find projects they can collaborate on.
 publish_to: 'none' 
-version: 1.0.0+1
+version: 1.0.0+2
 environment:
   sdk: '>=3.0.3 <4.0.0'
 dependencies:

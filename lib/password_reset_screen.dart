@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:collabio/model.dart';
+import 'package:provider/provider.dart';
 
 class PasswordResetScreen extends StatefulWidget {
   const PasswordResetScreen({Key? key}) : super(key: key);
@@ -13,6 +15,13 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final _auth = FirebaseAuth.instance;
+  late ProfileInfoModel profileInfoModel;
+
+  @override
+  void initState() {
+    super.initState();
+    profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
+  }
 
   void resetPassword(String email) async {
     try {
@@ -82,7 +91,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
               TextButton(
                 child: const Text('OK'),
                 onPressed: () {
-                  //if (title == "Password Reset") profileInfoModel.updateForgotPasswordTemp(false);
+                  if (title == "Password Reset") profileInfoModel.updateForgotPasswordTemp(false);
      
                   context.pop();
                 },

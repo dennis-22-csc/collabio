@@ -172,13 +172,25 @@ void main() async {
   final dataSender = DataSender();
   
   // Simulate sending a new message to the Flask /message route
-  final message = {
+  final message1 = {
     "message_id": const Uuid().v4(),
     "sender_name": "Alimat Sadiat",
     "sender_email": "alimatsadiat@gmail.com",
     "receiver_name": "Dennis Akpotaire",
-    "receiver_email": "dennisakpotaire@gmail.com",
+    "receiver_email": "dennisthebusinessguru@gmail.com",
     "message": "Okay Dennis.",
+    "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
+        .format(DateTime.now()),
+    "status": "pending",
+  };
+
+  final message2 = {
+    "message_id": const Uuid().v4(),
+    "sender_name": "Ola Smith",
+    "sender_email": "olasmith@gmail.com",
+    "receiver_name": "Dennis Akpotaire",
+    "receiver_email": "dennisthebusinessguru@gmail.com",
+    "message": "Hello, Dennis, how are you?.",
     "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
     "status": "pending",
@@ -330,7 +342,7 @@ If you are interested in contributing to this app and helping people achieve the
 }
 ];
 
- //final messageResponse = await dataSender.sendMessageData(message);
+ //final messageResponse = await dataSender.sendMessageData(message1);
  //print(messageResponse);
   
   final projectResponse = await dataSender.sendProjectData(project3);
