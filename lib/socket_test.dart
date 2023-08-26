@@ -164,6 +164,61 @@ Future<String> sendMessageData(Map<String, dynamic> messageData) async {
   return msg;
 }
 
+Future<String> updateProfileSection(String email, String title, dynamic content) async {
+  late String msg;
+  const String url = 'https://collabio.denniscode.tech/update_profile';
+  final Map<String, dynamic> data = {
+    'email': email,
+  };
+  // Assign the specific content to the corresponding field based on the 'title'
+  switch (title) {
+    case 'First Name':
+      data['first_name'] = content;
+      break;
+    case 'Last Name':
+      data['last_name'] = content;
+      break;
+    case 'About':
+      data['about'] = content;
+    case 'Skills':
+      data['tags'] = content;
+      break;
+    case 'Profile Picture':
+      data['picture_bytes'] = content;
+    default:
+      break;
+  }
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final responseData = jsonDecode(responseBody);
+        if (responseData == "Profile updated successfully") {
+          msg = "Profile section $title updated successfully";
+        } else {
+          msg = responseData;
+        }
+      } 
+    } else {
+      final responseText = response.body.replaceAll(RegExp(r'<[^>]*>'), '');
+      msg = 'Failed to update profile section $title. $responseText';
+    }
+  } catch (e) {
+    msg = 'Error occurred while updating profile section "$title". $e';
+  }
+  return msg;
+}
+
+
 }
 
 
@@ -345,9 +400,17 @@ If you are interested in contributing to this app and helping people achieve the
  //final messageResponse = await dataSender.sendMessageData(message1);
  //print(messageResponse);
   
-  final projectResponse = await dataSender.sendProjectData(project3);
-  print('Project response: $projectResponse');
+  //final projectResponse = await dataSender.sendProjectData(project3);
+  //print('Project response: $projectResponse');
+  const imageUrl = 'https://ucarecdn.com/a59c6d79-1baf-412f-bf78-c7d7a7e31712/image14.jpg';
+  final response = await http.get(Uri.parse(imageUrl));
 
+  if (response.statusCode == 200) {
+    final imageBytes = response.bodyBytes;
+    final encodedImageString = base64Encode(imageBytes);
+    final imageResponse = await dataSender.updateProfileSection("dennisthebusinessguru@gmail.com", "Profile Picture", encodedImageString);
+    print(imageResponse);
+  }
   //final userResponse = await dataSender.fetchUserInfoFromApi("denniskoko@gmail.com");
   //print('User Response: $userResponse');
 

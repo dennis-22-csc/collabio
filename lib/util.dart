@@ -9,8 +9,51 @@ import 'package:collabio/model.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:collabio/firebase_options.dart';
+import 'dart:typed_data';
+import 'dart:convert';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class Util {
+  static FileImage? buildProfilePicture(String? persistedFilePath) {
+  if (persistedFilePath == null || persistedFilePath.isEmpty) {
+    return null;
+  }
+
+  File existingProfilePicture = File(persistedFilePath);
+  if (existingProfilePicture.existsSync()) {
+    return FileImage(existingProfilePicture);
+  } else {
+    return null;
+  }
+}
+
+  static Future<File?> compressFile(File file) async{
+    
+    final filePath = file.absolute.path;
+
+    final lastIndex = filePath.lastIndexOf(RegExp(r'.jp'));
+    final splitted = filePath.substring(0, (lastIndex));
+    final outPath = "${splitted}_out${filePath.substring(lastIndex)}";
+    var result = await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path, outPath,
+      quality: 15,
+    );
+    
+
+    if (result != null) {
+      return File(result.path);
+    } else {
+      return null;
+    }
+  
+  }
+
+  static Future<String> getImageString(File profilePicture) async {
+    final imageBytes = await profilePicture.readAsBytes();
+    final encodedImage = base64Encode(imageBytes);
+    return encodedImage;
+  }
+
   static String formatToOneLine(String message) {
     return message.replaceAllMapped(RegExp(r'(?<=[.!?])\s+'), (match) {
             return ' ';
@@ -50,15 +93,30 @@ class Util {
     return formatter.format(time);
   }
 
+
+static Uint8List? convertBase64ToImage(String imageString) {
+    try {
+      // Decode base64 string to bytes
+      List<int> imageBytes = base64Decode(imageString);
+
+      // Return Uint8List image bytes
+      return Uint8List.fromList(imageBytes);
+    } catch (e) {
+      return null;
+    }
+  }
+
 static Map<String, dynamic> convertJsonToUserInfo(Map<String, dynamic> jsonData) {
   List<String> tagsList = List<String>.from(jsonData['tags']);
 
   return {
+    'email': jsonData['email'] ?? '',
     'firstName': jsonData['first_name'],
     'lastName': jsonData['last_name'],
     'about': jsonData['about'],
     'tags': tagsList,
-    'pictureUri': jsonData['picture_uri'],
+    'pictureBytes': jsonData['picture_bytes'] ?? '',
+    'userId': jsonData['user_id'],
   };
 }
 
@@ -68,7 +126,8 @@ static Future<String> saveProfileInformation({
     required String about,
     required String email,
     required List<String> tags,
-    required String pictureUri,
+    required String pictureBytes,
+    required String userId,
   }) async {
     Map<String, dynamic> userData = {
         'first_name': firstName,
@@ -76,7 +135,8 @@ static Future<String> saveProfileInformation({
         'email': email,
         'about': about,
         'tags': tags,
-        'picture_uri': pictureUri,
+        'picture_bytes': pictureBytes,
+        'user_id': userId,
       };
     
     String result = await sendUserData(userData);
@@ -95,7 +155,7 @@ static Future<String> saveProfileInformation({
     return false;
   }
 
-static Future<bool> saveProfilePicture(File profilePicture) async {
+static Future<bool> saveProfilePicture(String imageString) async {
   Directory? directory;
 
   if (Platform.isAndroid) {
@@ -131,11 +191,12 @@ static Future<bool> saveProfilePicture(File profilePicture) async {
       }
     }
 
-    File saveFile = File("${directory.path}/${profilePicture.path.split('/').last}");
-    await profilePicture.copy(saveFile.path);
-    await SharedPreferencesUtil.saveProfilePicturePath(saveFile.path);
-    return true;
-  }
+  List<int> imageBytes = base64Decode(imageString);
+  File saveFile = File("${directory.path}/profile_image.jpg");
+  await saveFile.writeAsBytes(imageBytes);
+  await SharedPreferencesUtil.saveProfilePicturePath(saveFile.path);
+  return true;
+}
 
   return false;
 }
@@ -275,7 +336,7 @@ class SharedPreferencesUtil {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('sentToken', sentToken);
   }
-
+  
   static Future<void> setLogOutStatus(bool status) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('logout', status);
@@ -299,13 +360,11 @@ class SharedPreferencesUtil {
     String lastName = userInfo['lastName'];
     String about = userInfo['about'];
     List<String> tags = userInfo['tags'];
-    String pictureUri = userInfo['pictureUri'];
 
     await prefs.setString('firstName', firstName);
     await prefs.setString('lastName', lastName);
     await prefs.setString('about', about);
     await prefs.setStringList('tags', tags);
-    await prefs.setString('profile_picture', pictureUri);
   }
   static updateUserInfo(String title, dynamic content) async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -320,8 +379,6 @@ class SharedPreferencesUtil {
           await prefs.setString('about', content);
         case 'Skills':
           await prefs.setStringList('tags', content);
-        case 'Profile Picture':
-          await prefs.setStringList('profile_picture', content);
         default:
           break;
       }
@@ -334,6 +391,7 @@ class SharedPreferencesUtil {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getBool('sentToken') ?? false;
   }
+  
   static Future<bool> isLogOut() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getBool('logout') ?? false;
@@ -373,5 +431,5 @@ class SharedPreferencesUtil {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('firebase_token') ?? '';
   }
-
+  
 }

@@ -180,7 +180,6 @@ class ProfileInfoModel extends ChangeNotifier {
   String? lastName;
   String? about;
   List<String>? tags;
-  String? persistedFilePath;
   bool hasProfile = false;
   bool sentToken = false;
   String? myToken;
@@ -189,6 +188,7 @@ class ProfileInfoModel extends ChangeNotifier {
   bool isLogInUser = false;
   bool forgotPassword = false;
   User? user;
+  FileImage? profilePicture;
 
   Future<void> updateProfileInfo() async {
     hasProfile = await SharedPreferencesUtil.hasProfile();
@@ -197,7 +197,8 @@ class ProfileInfoModel extends ChangeNotifier {
     name = '$firstName $lastName';
     about = await SharedPreferencesUtil.getAbout();
     tags = await SharedPreferencesUtil.getTags();
-    persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
+    String persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
+    profilePicture = Util.buildProfilePicture(persistedFilePath);
     sentToken = await SharedPreferencesUtil.sentToken();
     myToken = await SharedPreferencesUtil.getToken();
     isLogOutUser = await SharedPreferencesUtil.isLogOut();
@@ -223,8 +224,9 @@ class ProfileInfoModel extends ChangeNotifier {
     tags = await SharedPreferencesUtil.getTags();
     notifyListeners();
   }
-  Future<void> updatePersistedPicturePath() async {
-    persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
+  Future<void> updateProfilePicture() async {
+    String persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
+    profilePicture = Util.buildProfilePicture(persistedFilePath);
     notifyListeners();
   }
   Future<void> updateSentToken() async {

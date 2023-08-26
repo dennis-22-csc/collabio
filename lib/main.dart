@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:collabio/view_profile.dart';
+import 'package:collabio/view_other_profile.dart';
 import 'package:collabio/view_project.dart';
 import 'package:collabio/post_project.dart';
 import 'package:collabio/password_reset_screen.dart';
@@ -174,7 +175,7 @@ Future<void> getProfileInfo() async {
           final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
           projectsModel.updateProjects(tags, 10);
         });
-        _showError(location);
+        
       } else {
         _showError("Unable to fetch dependencies at the moment.");
         //_showError(projectResult);
@@ -278,8 +279,7 @@ Future<void> getProfileInfo() async {
         GoRoute(
           path: '/',
           builder: (context, state) {
-            location = GoRouterState.of(context).uri.toString();
-  
+            
             if (_errorOccurred) {
               return _buildErrorScreen();
             }
@@ -320,6 +320,20 @@ Future<void> getProfileInfo() async {
             key: state.pageKey,
             child: const ProfileSectionScreen(),
           ),
+        ),
+        GoRoute(
+          name: "view-user-profile",
+          path: '/view-user-profile/:id',
+          builder: (context, state) {
+            if (_errorOccurred) {
+              return _buildErrorScreen();
+            }
+            if (!_networkOperationCompleted) {
+              return _buildLoadingIndicator();
+            }
+            final userId = state.pathParameters["id"] as String;
+            return ViewOtherProfileScreen(userId: userId,);
+          },
         ),
         GoRoute(
           name: "view-project",
@@ -375,8 +389,7 @@ Future<void> getProfileInfo() async {
           name: "view-inbox",
           path: '/view-inbox',
           builder: (context, state) {
-            location = GoRouterState.of(context).uri.toString();
-  
+            
             if (_errorOccurred) {
               return _buildErrorScreen();
             }

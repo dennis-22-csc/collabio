@@ -39,6 +39,40 @@ Future<dynamic> fetchUserInfoFromApi(String email) async {
   return msg;
 }
 
+Future<dynamic> fetchOtherUserInfoFromApi(String userId) async {
+  late String msg;
+
+  try {
+    final url = Uri.parse('https://collabio.denniscode.tech/get-other-user');
+    final headers = {'Content-Type': 'application/json'};
+    final body = jsonEncode({'user_id': userId});
+
+    final response = await http.post(url, headers: headers, body: body);
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+      final responseBody = response.body;
+
+      if (contentType?.contains('application/json') == true) {
+        final responseData = jsonDecode(responseBody);
+        if (responseData.containsKey('error')) {
+          return responseData["error"];
+        } else if (responseData.containsKey('other_user')) {
+          Map<String, dynamic> results = Map<String, dynamic>.from(responseData['other_user']);
+          return Util.convertJsonToUserInfo(results);
+        }
+      } else {
+        msg = responseBody;
+      }
+    } else {
+      msg = 'HTTP Error: ${response.statusCode}';
+    }
+  } catch (error) {
+    msg = 'Other User. $error';
+  }
+  return msg;
+}
+
 Future<dynamic> fetchProjectsFromApi() async {
   late String msg;
   try {
@@ -294,7 +328,7 @@ Future<String> updateProfileSection(String email, String title, dynamic content)
       data['tags'] = content;
       break;
     case 'Profile Picture':
-      data['picture_uri'] = content;
+      data['picture_bytes'] = content;
     default:
       break;
   }

@@ -81,7 +81,6 @@ class _LoginScreenState extends State<LoginScreen> {
           if (fetchResult is Map<String, dynamic>) {
             await SharedPreferencesUtil.setUserInfo(fetchResult);
             await SharedPreferencesUtil.setHasProfile(true);
-            await profileInfoModel.updateProfileInfo();
             bool storagePermitted = await Util.requestPermission(Permission.storage);
             if (!storagePermitted) {
               _showError("You need to grant storage access for media storage");
@@ -91,6 +90,8 @@ class _LoginScreenState extends State<LoginScreen> {
               SharedPreferencesUtil.setLogOutStatus(true);
               profileInfoModel.updateLogOutUserStatus();
             }
+            await Util.saveProfilePicture(fetchResult["pictureBytes"]);
+            await profileInfoModel.updateProfileInfo();
           }  
       }
           

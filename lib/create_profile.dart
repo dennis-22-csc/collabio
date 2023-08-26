@@ -23,6 +23,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _tagController = TextEditingController();
   File? _profilePicture;
   String? _email;
+  String? _userId;
+
   final List<String> _selectedTags = [];
   final _formKey = GlobalKey<FormState>();
   bool _addButtonPressed = false;
@@ -35,6 +37,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     User user = FirebaseAuth.instance.currentUser!; 
     _email = user.email;
+    _userId = user.uid;
+
     _focusNode.addListener(_onFocusChange);
     // Register to listen to keyboard visibility changes.
     var keyboardVisibilityController = KeyboardVisibilityController();
@@ -100,10 +104,12 @@ void _onFocusChange() {
     if (directoryExists) {
       // Permission granted, launch picker
       final picker = ImagePicker();
-      final pickedImage = await picker.pickImage(source: ImageSource.gallery);
+      final pickedImage = await picker.pickImage(source: ImageSource.gallery,);
       if (pickedImage != null) {
+        File imageFile = File(pickedImage.path);
+        File? compressedImageFile = await Util.compressFile(imageFile);
         setState(() {
-          _profilePicture = File(pickedImage.path);
+          _profilePicture = compressedImageFile;
         });
       }
     } else {
@@ -127,31 +133,30 @@ void _onFocusChange() {
   String? email = _email;
   late String msg;
   late String title;
-  String? pictureUri;
 
   if (_profilePicture != null) {
     // Save profile picture to internal storage
-    bool savedPicture = await Util.saveProfilePicture(_profilePicture!);
-        
-    if (savedPicture) {
-      pictureUri = await SharedPreferencesUtil.getPersistedFilePath();
-      String result = await Util.saveProfileInformation(
-      firstName: firstName,
-      lastName: lastName,
-      about: about,
-      email: email!,
-      tags: _selectedTags,
-      pictureUri: pictureUri,
-      );
-      if (result == "User inserted successfully.") {
-      try {
+      String? imageString = await Util.getImageString(_profilePicture!);
+      bool savedPicture = await Util.saveProfilePicture(imageString);
+      
+      if (savedPicture) {
+        String result = await Util.saveProfileInformation(
+        firstName: firstName,
+        lastName: lastName,
+        about: about,
+        email: email!,
+        tags: _selectedTags,
+        pictureBytes: imageString,
+        userId: _userId!,
+        );
+        if (result == "User inserted successfully.") {
+        try {
         // Save data to shared preferences after successful remote save
         Map<String, dynamic> userInfo = {
           'firstName': firstName,
           'lastName': lastName,
           'about': about,
           'tags': _selectedTags,
-          'pictureUri': pictureUri,
         };
         await SharedPreferencesUtil.setUserInfo(userInfo);
         await SharedPreferencesUtil.setHasProfile(true);
@@ -162,21 +167,22 @@ void _onFocusChange() {
         msg = "Profile created successfully";
         title = "Success";
       } catch (e) {
-        //msg = 'Error $e.toString()';
-        msg = "Can't create profile at the moment";
+        msg = 'Error $e.toString()';
+        //msg = "Can't create profile at the moment";
         title = "Error";
         SharedPreferencesUtil.saveProfilePicturePath('');
       }
     } else {
-      //msg = "Failed to create profile $result";
-      msg = "Can't create profile at the moment";
+      msg = "Failed to create profile $result";
+      //msg = "Can't create profile at the moment";
       title = "Error";
       SharedPreferencesUtil.saveProfilePicturePath('');
     }
     } else {
-      msg = 'Unable to save profile picture.';
+      msg = 'Unable to save profile picture to internal storage.';
       title = "Error";
     }
+    
   } else {
     msg = 'Please select and upload a profile picture.';
     title = "Error";

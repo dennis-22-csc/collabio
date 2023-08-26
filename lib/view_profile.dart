@@ -160,28 +160,45 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
 
   void selectProfilePicture() async {
     try {
-    bool directoryExists = await Util.checkAndCreateDirectory(context);
+      File? currentProfilePicture;
+
+      bool directoryExists = await Util.checkAndCreateDirectory(context);
+      String currentProfilePicturePath = await SharedPreferencesUtil.getPersistedFilePath();
+        
+      if (currentProfilePicturePath.isNotEmpty) {
+        currentProfilePicture = File(currentProfilePicturePath);
+      }
 
     if (directoryExists) {
       final picker = ImagePicker();
-      final pickedImage = await picker.pickImage(source: ImageSource.gallery);
+      final pickedImage = await picker.pickImage(source: ImageSource.gallery, );
       if (pickedImage != null) {
-        File newProfilePicture = File(pickedImage.path);
-
-        bool saved = await Util.saveProfilePicture(newProfilePicture);
+        
+        File imageFile = File(pickedImage.path);
+        File? compressedImageFile = await Util.compressFile(imageFile);
+       
+        File newProfilePicture = compressedImageFile!;
+        
+        String imageString = await Util.getImageString(newProfilePicture);
+        bool saved = await Util.saveProfilePicture(imageString);
         if (saved) {
-          String? pictureUri = await SharedPreferencesUtil.getPersistedFilePath();
-      
-          final result = await updateProfileSection(_email!, "Profile Picture", pictureUri);
+          final result = await updateProfileSection(_email!, "Profile Picture", imageString);
           if (result == "Profile section Profile Picture updated successfully") {
-             _profileInfoModel.updatePersistedPicturePath();
+              _profileInfoModel.updateProfilePicture();
           } else {
             WidgetsBinding.instance.addPostFrameCallback((_) async {
               ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Could not connect to server")),
+              const SnackBar(content: Text("Failed to connect to server")),
             );
             });
-            SharedPreferencesUtil.saveProfilePicturePath('');
+            if (currentProfilePicture != null) {
+              String? currentProfilePictureString = await Util.getImageString(currentProfilePicture);
+              await Util.saveProfilePicture(currentProfilePictureString);
+              _profileInfoModel.updateProfilePicture();
+            } else {
+              await SharedPreferencesUtil.saveProfilePicturePath('');
+              _profileInfoModel.updateProfilePicture();
+            }
           }
         }
       }
@@ -191,65 +208,57 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
     }
   }
 
-  FileImage buildProfilePicture (String persistedFilePath) {
-    late FileImage profilePicture;
-
-    File existingProfilePicture = File(persistedFilePath);
-    if (existingProfilePicture.existsSync()) {
-      profilePicture = FileImage(existingProfilePicture);
-    }
-  
-    return profilePicture;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final profileInfoModel = Provider.of<ProfileInfoModel>(context);    
-    sections[0].content = profileInfoModel.firstName!;
-    sections[1].content = profileInfoModel.lastName!;
-    sections[2].content = profileInfoModel.about!;
-    sections[3].tags = profileInfoModel.tags!;
-    _profileInfoModel = profileInfoModel;
+     _profileInfoModel = Provider.of<ProfileInfoModel>(context);
+    sections[0].content = _profileInfoModel.firstName!;
+    sections[1].content = _profileInfoModel.lastName!;
+    sections[2].content = _profileInfoModel.about!;
+    sections[3].tags = _profileInfoModel.tags!;
 
-    return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              context.pop();
-            },
-          ),
-          title: const Text('Your Profile')
-        ),
-        body: ListView.builder(
-          itemCount: 1 + sections.length,
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return Column(
-                children: [
-                  CircleAvatar(
-                    radius: 80,
-                    backgroundImage: profileInfoModel.persistedFilePath == null ? null : buildProfilePicture(profileInfoModel.persistedFilePath!),
-                    child: Stack(
-                      children: [
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: IconButton(
-                            icon: const Icon(Icons.add),
-                            onPressed: selectProfilePicture,
-                          ),
-                        ),
-                      ],
-                    ),
+    return Consumer<ProfileInfoModel>(
+        builder: (context, profileInfoModel, _) {
+            return Scaffold(
+                appBar: AppBar(
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () {
+                      context.pop();
+                    },
                   ),
-                ],
+                  title: const Text('Your Profile')
+                ),
+                body: ListView.builder(
+                  itemCount: 1 + sections.length,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 80,
+                            backgroundImage: _profileInfoModel.profilePicture == null ? null : _profileInfoModel.profilePicture!,
+                            child: Stack(
+                              children: [
+                                Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.add),
+                                    onPressed: selectProfilePicture,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return ProfileSectionView(key: UniqueKey(), section: sections[index - 1]);
+                  },
+                ),
               );
-            }
-            return ProfileSectionView(key: UniqueKey(), section: sections[index - 1]);
-          },
-        ),
-      );
-  }
+            },
+        );
+    }
 
   void showStatusDialog(String title, String content){
     showDialog(

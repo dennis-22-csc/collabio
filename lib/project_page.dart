@@ -5,7 +5,6 @@ import 'package:collabio/util.dart';
 import 'package:provider/provider.dart';
 import 'package:collabio/model.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
 
 class MyProjectPage extends StatefulWidget {
@@ -61,16 +60,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
       profileInfoModel.updateUserTemp(currentUser);
     }
   }
-  FileImage buildProfilePicture (String persistedFilePath) {
-    late FileImage profilePicture;
-     
-    File existingProfilePicture = File(persistedFilePath);
-    if (existingProfilePicture.existsSync()) {
-      profilePicture = FileImage(existingProfilePicture);
-    }
-    return profilePicture;
-  }
-
+  
   void openDeleteAccountUrl() async {
     final Uri url = Uri.parse('https://collabio.denniscode.tech/del-account');
     if (await canLaunchUrl(url)) await launchUrl(url);
@@ -84,8 +74,8 @@ class _MyProjectPageState extends State<MyProjectPage> {
       accountName: Text(profileInfoModel.name!),
       accountEmail: Text(_email!),
       currentAccountPicture: CircleAvatar(
-        backgroundImage: profileInfoModel.persistedFilePath != null && profileInfoModel.hasProfile ? buildProfilePicture(profileInfoModel.persistedFilePath!): null,
-        child: profileInfoModel.persistedFilePath == null && !profileInfoModel.hasProfile? const Icon(Icons.person) : null,
+        backgroundImage: profileInfoModel.profilePicture != null && profileInfoModel.hasProfile ? profileInfoModel.profilePicture: null,
+        child: profileInfoModel.profilePicture == null && !profileInfoModel.hasProfile? const Icon(Icons.person) : null,
       ),
     )
   else
@@ -143,8 +133,8 @@ class _MyProjectPageState extends State<MyProjectPage> {
                 },
                 child: CircleAvatar(
                   radius: 20,
-                  backgroundImage: profileInfoModel.persistedFilePath != null ? buildProfilePicture(profileInfoModel.persistedFilePath!) : null,
-                  child: profileInfoModel.persistedFilePath == null ? const Icon(Icons.person) : null,
+                  backgroundImage: profileInfoModel.profilePicture == null ?  null : profileInfoModel.profilePicture!,
+                  child: profileInfoModel.profilePicture == null ? const Icon(Icons.person) : null,
                 ),
               ),
               const SizedBox(width: 8.0),
