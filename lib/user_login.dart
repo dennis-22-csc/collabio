@@ -92,7 +92,11 @@ class _LoginScreenState extends State<LoginScreen> {
             }
             await Util.saveProfilePicture(fetchResult["pictureBytes"]);
             await profileInfoModel.updateProfileInfo();
-          }  
+          } else {
+            _showError("Unable to fetch dependencies at the moment.");
+            //_showError(fetchResult);
+            return;
+          } 
       }
           
       final projectResult = await fetchProjectsFromApi();

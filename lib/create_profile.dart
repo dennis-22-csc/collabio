@@ -8,6 +8,7 @@ import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'dart:async';
 import 'package:collabio/model.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -23,7 +24,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _tagController = TextEditingController();
   File? _profilePicture;
   String? _email;
-  String? _userId;
 
   final List<String> _selectedTags = [];
   final _formKey = GlobalKey<FormState>();
@@ -37,7 +37,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     User user = FirebaseAuth.instance.currentUser!; 
     _email = user.email;
-    _userId = user.uid;
 
     _focusNode.addListener(_onFocusChange);
     // Register to listen to keyboard visibility changes.
@@ -147,7 +146,7 @@ void _onFocusChange() {
         email: email!,
         tags: _selectedTags,
         pictureBytes: imageString,
-        userId: _userId!,
+        userId: const Uuid().v4(),
         );
         if (result == "User inserted successfully.") {
         try {
