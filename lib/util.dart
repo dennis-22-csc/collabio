@@ -53,12 +53,10 @@ class Util {
     final encodedImage = base64Encode(imageBytes);
     return encodedImage;
   }
-
   static String formatToOneLine(String message) {
-    return message.replaceAllMapped(RegExp(r'(?<=[.!?])\s+'), (match) {
-            return ' ';
-          }).trim();
+  return message.replaceAll(RegExp(r'\n'), ' ').trim();
   }
+  
   static Future<bool> initializeFirebase() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,

@@ -36,7 +36,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.trim().isNotEmpty) {
       final message = {
       "message_id": const Uuid().v4(),
-      "sender_name": widget.currentUserEmail,
+      "sender_name": widget.currentUserName,
       "sender_email": widget.currentUserEmail,
       "receiver_name": widget.otherPartyName,
       "receiver_email": widget.otherPartyEmail,

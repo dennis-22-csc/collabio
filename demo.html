@@ -4,21 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-.video-container {
-  position: relative;
-  padding-bottom: 56.25%;
-  height: 0;
-  overflow: hidden;
-}
-
-.video-container iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-.section {
+    .video-container {
+      display: flex;
+      justify-content: center;
+    }
+    .video-container iframe {
+      position: absolute;
+      width: 75%;
+      height: 75%;
+    }
+    .section {
       text-align: left;
       padding: 20px;
     }
@@ -27,7 +22,7 @@
       padding: 10px 20px;
       background-color: #4CAF50;
       color: white;
-      font-size: 16px;
+      font-size: 30px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
@@ -37,7 +32,7 @@
 </head>
 <body>
     <div class="video-container">
-      <iframe frameborder="0" allowfullscreen></iframe>
+      <iframe></iframe>
     </div>
     <div class="section" style="text-align: center;">
     <a class="cta-button" href="https://play.google.com/store/apps/details?id=com.denniscode.collabio">GET COLLABIO FOR ANDROID</a>

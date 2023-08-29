@@ -178,7 +178,6 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
       showStatusDialog("Message not sent, will be sent when the server is reachable.");
     }
     });
-   _messageController.clear();
   }
 
   void _showMessageDialog(BuildContext context) {

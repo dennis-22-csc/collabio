@@ -233,7 +233,7 @@ void main() async {
     "sender_email": "alimatsadiat@gmail.com",
     "receiver_name": "Dennis Akpotaire",
     "receiver_email": "dennisthebusinessguru@gmail.com",
-    "message": "Okay Dennis.",
+    "message": "Can you tell me a bit about your background?",
     "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
     "status": "pending",
@@ -245,7 +245,7 @@ void main() async {
     "sender_email": "olasmith@gmail.com",
     "receiver_name": "Dennis Akpotaire",
     "receiver_email": "dennisthebusinessguru@gmail.com",
-    "message": "Hello, Dennis, how are you?.",
+    "message": "I'm fine too.",
     "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
         .format(DateTime.now()),
     "status": "pending",
@@ -397,12 +397,12 @@ If you are interested in contributing to this app and helping people achieve the
 }
 ];
 
- //final messageResponse = await dataSender.sendMessageData(message1);
- //print(messageResponse);
+ final messageResponse = await dataSender.sendMessageData(message2);
+ print(messageResponse);
   
   //final projectResponse = await dataSender.sendProjectData(project3);
   //print('Project response: $projectResponse');
-  const imageUrl = 'https://ucarecdn.com/a59c6d79-1baf-412f-bf78-c7d7a7e31712/image14.jpg';
+  /*const imageUrl = 'https://ucarecdn.com/a59c6d79-1baf-412f-bf78-c7d7a7e31712/image14.jpg';
   final response = await http.get(Uri.parse(imageUrl));
 
   if (response.statusCode == 200) {
@@ -410,7 +410,7 @@ If you are interested in contributing to this app and helping people achieve the
     final encodedImageString = base64Encode(imageBytes);
     final imageResponse = await dataSender.updateProfileSection("dennisthebusinessguru@gmail.com", "Profile Picture", encodedImageString);
     print(imageResponse);
-  }
+  }*/
   //final userResponse = await dataSender.fetchUserInfoFromApi("denniskoko@gmail.com");
   //print('User Response: $userResponse');
 
@@ -425,5 +425,11 @@ If you are interested in contributing to this app and helping people achieve the
   for (var project in matchingProjects2) {
     print(project);
   }*/
-
+  /*String formatToOneLine(String message) {
+  return message.replaceAll(RegExp(r'\n'), ' ').trim();
+}
+  
+  String input = "Hello, world!\nHow are you?\nThis is a test;\n a test of formatting,\nParentheses ()\n can be tricky.";
+  print(formatToOneLine(input));*/
+  
 }

@@ -127,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
       //Get initial messages from local database
       final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-      messagesModel.updateGroupedMessages(email);
+       messagesModel.updateGroupedMessages(email);
 
       //Set up web socket for new messages
       await connectToSocket(messagesModel, email);
