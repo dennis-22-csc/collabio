@@ -33,6 +33,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
+    _hasProfile = profileInfoModel.hasProfile;
+    //logUserOut();
     initDatabase();
   }
 
@@ -50,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _login = true;
         });
         // Fetch dependencies
-        await fetchApiData(userCredential.user!, email);
+        await fetchApiData(userCredential.user, email);
       } else {     
         // User registration successful but not yet verified, navigate to email verification screen
         //WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -74,11 +77,16 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> fetchApiData(User user, String email) async {
+  Future<void> fetchApiData(User? user, String email) async {
     try {
       if (!_hasProfile) {
           final fetchResult = await fetchUserInfoFromApi(email);
-          if (fetchResult is Map<String, dynamic>) {
+          
+          if (fetchResult == "No user is found") {
+            await SharedPreferencesUtil.clearPreferences();
+            SharedPreferencesUtil.setLogInStatus(true);
+            profileInfoModel.updateLogInUserStatus();
+          } else if (fetchResult is Map<String, dynamic>) {
             await SharedPreferencesUtil.setUserInfo(fetchResult);
             await SharedPreferencesUtil.setHasProfile(true);
             bool storagePermitted = await Util.requestPermission(Permission.storage);
@@ -93,10 +101,10 @@ class _LoginScreenState extends State<LoginScreen> {
             await Util.saveProfilePicture(fetchResult["pictureBytes"]);
             await profileInfoModel.updateProfileInfo();
           } else {
-            _showError("Unable to fetch dependencies at the moment.");
-            //_showError(fetchResult);
+             //_showError("Unable to fetch dependencies at the moment.");
+            _showError(fetchResult);
             return;
-          } 
+          }
       }
           
       final projectResult = await fetchProjectsFromApi();
@@ -110,8 +118,8 @@ class _LoginScreenState extends State<LoginScreen> {
         projectsModel.updateProjects(tags, 10);
         });
       } else {
-        _showError("Unable to fetch dependencies at the moment.");
-        //_showError(projectResult);
+        //_showError("Unable to fetch dependencies at the moment.");
+        _showError(projectResult);
         return;
       }
 
@@ -119,8 +127,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (messageResult is List<Message>) {
         await DatabaseHelper.insertMessages(messageResult);
       } else {
-        _showError("Unable to fetch dependencies at the moment.");
-        //_showError(messageResult);
+        //_showError("Unable to fetch dependencies at the moment.");
+        _showError(messageResult);
         return;
       }
 
@@ -149,8 +157,8 @@ class _LoginScreenState extends State<LoginScreen> {
         _fetchCompleted = true;
       });
     } catch (error) {
-      _showError("Unable to fetch dependencies at the moment.");
-      //_showError("An error occurred: $error");
+      //_showError("Unable to fetch dependencies at the moment.");
+      _showError("An error occurred: $error");
     }
   }
 
@@ -161,6 +169,19 @@ class _LoginScreenState extends State<LoginScreen> {
       _fetchCompleted = true;
       _login = true;
     });
+  }
+
+  Future<void> logUserOut() async {
+    if (profileInfoModel.isLogOutUser) {
+      await FirebaseAuth.instance.signOut();
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      await currentUser?.reload();
+      if (currentUser == null) {
+      SharedPreferencesUtil.setLogOutStatus(true);
+      profileInfoModel.updateLogOutUserStatus();
+      profileInfoModel.updateUserTemp(currentUser);
+      }
+    }
   }
 
   Future<void> initDatabase() async {
@@ -177,9 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
 Widget build(BuildContext context) {
-  profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
-  _hasProfile = profileInfoModel.hasProfile;
-
+  
   appTheme = ThemeData(
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       useMaterial3: true,
@@ -204,7 +223,8 @@ Widget build(BuildContext context) {
   }
 
 Widget buildLoginScreen() {
-  
+  return Consumer<ProfileInfoModel>(
+      builder: (context, profileInfoModel, _) {
   return Scaffold(
     appBar: AppBar(
       title: const Text('Login'),
@@ -292,6 +312,8 @@ Widget buildLoginScreen() {
         ),
       ),
     ),
+  );
+  },
   );
 }
 

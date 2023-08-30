@@ -402,22 +402,22 @@ class SharedPreferencesUtil {
 
   static Future<String> getPersistedFilePath() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('profile_picture')!;
+    return prefs.getString('profile_picture') ?? '';
   }
 
   static Future<String> getFirstName() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('firstName')!;
+    return prefs.getString('firstName') ?? '';
   }
 
   static Future<String> getLastName() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('lastName')!;
+    return prefs.getString('lastName') ?? '';
   }
 
   static Future<String> getAbout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('about')!;
+    return prefs.getString('about') ?? '';
   }
 
   static Future<List<String>> getTags() async {
@@ -430,4 +430,8 @@ class SharedPreferencesUtil {
     return prefs.getString('firebase_token') ?? '';
   }
   
+  static Future<void> clearPreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
 }

@@ -6,7 +6,7 @@ import 'package:collabio/util.dart';
 import 'package:collabio/database.dart';
 
 Future<dynamic> fetchUserInfoFromApi(String email) async {
-  late String msg;
+  String? msg;
 
   try {
     final url = Uri.parse('https://collabio.denniscode.tech/get-user');

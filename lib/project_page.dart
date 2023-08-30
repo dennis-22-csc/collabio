@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:collabio/project_tab.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:collabio/util.dart';
+//import 'package:collabio/util.dart';
 import 'package:provider/provider.dart';
 import 'package:collabio/model.dart';
 import 'package:go_router/go_router.dart';
@@ -54,11 +54,12 @@ class _MyProjectPageState extends State<MyProjectPage> {
     User? currentUser = FirebaseAuth.instance.currentUser;
     await currentUser?.reload();
 
-    if (currentUser == null) {
+    /*if (currentUser == null) {
       SharedPreferencesUtil.setLogOutStatus(true);
       profileInfoModel.updateLogOutUserStatus();
       profileInfoModel.updateUserTemp(currentUser);
-    }
+    }*/
+    
   }
   
   void openDeleteAccountUrl() async {
@@ -105,12 +106,12 @@ class _MyProjectPageState extends State<MyProjectPage> {
         }
       },
     ),
-  ListTile(
+  /*ListTile(
     title: const Text('Log Out'),
     onTap: () {
       logUserOut();
     },
-  ),
+  ),*/
   ListTile(
     title: const Text('Delete Account'),
     onTap: () {
@@ -118,7 +119,8 @@ class _MyProjectPageState extends State<MyProjectPage> {
     },
   ),
 ];
-
+  return Consumer<ProfileInfoModel>(
+  builder: (context, profileInfoModel, _) {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -260,6 +262,8 @@ class _MyProjectPageState extends State<MyProjectPage> {
         ),
       ),
     );
+  },
+  );
   }
 
   void showProfileDialog(String content){
