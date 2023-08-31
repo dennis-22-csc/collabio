@@ -91,7 +91,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
               TextButton(
                 child: const Text('OK'),
                 onPressed: () {
-                  if (title == "Password Reset") profileInfoModel.updateForgotPasswordTemp(false);
+                  if (title == "Password Reset") context.goNamed("login");
      
                   context.pop();
                 },

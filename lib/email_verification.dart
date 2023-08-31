@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:collabio/model.dart';
-import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
   
-  const EmailVerificationScreen({Key? key}) : super(key: key);
+  const EmailVerificationScreen({Key? key,}) : super(key: key);
+
 
 
   @override
@@ -17,21 +16,21 @@ class EmailVerificationScreen extends StatefulWidget {
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   Timer? timer;
-  late ProfileInfoModel profileInfoModel;
+  User? user;
 
   @override
   void initState() {
     super.initState();
-    profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
-
-    if (profileInfoModel.user != null && !profileInfoModel.user!.emailVerified) {
+    user = FirebaseAuth.instance.currentUser;
+    
+    if (user != null && !user!.emailVerified) {
       handleUserVerification();
     }
   }
 
   Future<void> handleUserVerification() async {
     // Perform user verification process
-    profileInfoModel.user?.sendEmailVerification();
+    user?.sendEmailVerification();
     timer = Timer.periodic(const Duration(seconds: 3), (_) => checkEmailVerified());
   }
 
@@ -72,7 +71,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 32.0),
                       child: Center(
                         child: Text(
-                          'We have sent a verification email to ${profileInfoModel.user?.email}',
+                          'We have sent a verification email to ${user?.email}',
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -96,7 +95,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                         child: const Text('Resend'),
                         onPressed: () {
                           try {
-                            profileInfoModel.user?.sendEmailVerification();
+                            user?.sendEmailVerification();
                           } catch (e) {
                             debugPrint('$e');
                           }
@@ -121,7 +120,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
             ElevatedButton(
               onPressed: () {
                 context.goNamed("login");
-                 profileInfoModel.updateUserTemp(currentUser);
               },
               child: const Text('OK'),
             ),

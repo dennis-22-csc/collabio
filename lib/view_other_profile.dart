@@ -56,6 +56,7 @@ class _ViewOtherProfileScreenState extends State<ViewOtherProfileScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             context.goNamed("projects");
+            if(!profileInfoModel.didPush) profileInfoModel.updateDidPush(true);
           },
         ),
         title: const Text('User Profile'),

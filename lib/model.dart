@@ -1,7 +1,7 @@
 import 'package:collabio/database.dart';
 import 'package:flutter/material.dart';
 import 'package:collabio/util.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:typed_data';
 
 class Project {
   final String id;
@@ -187,10 +187,8 @@ class ProfileInfoModel extends ChangeNotifier {
   String? name;
   bool isLogOutUser = false;
   bool isLogInUser = false;
-  bool forgotPassword = false;
-  User? user;
-  FileImage? profilePicture;
   bool didPush = false;
+  MemoryImage? profilePicture;
 
   Future<void> updateProfileInfo() async {
     hasProfile = await SharedPreferencesUtil.hasProfile();
@@ -200,18 +198,16 @@ class ProfileInfoModel extends ChangeNotifier {
     name = '$firstName $lastName';
     about = await SharedPreferencesUtil.getAbout();
     tags = await SharedPreferencesUtil.getTags();
-    String persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
-    profilePicture = Util.buildProfilePicture(persistedFilePath);
+    String imageString = await SharedPreferencesUtil.getPictureBytesString();
+    Uint8List? pictureBytes = Util.convertBase64ToImage(imageString);
+    if (pictureBytes != null) profilePicture = MemoryImage(pictureBytes);
     sentToken = await SharedPreferencesUtil.sentToken();
     myToken = await SharedPreferencesUtil.getToken();
     isLogOutUser = await SharedPreferencesUtil.isLogOut();
     isLogInUser = await SharedPreferencesUtil.isLogIn();
     notifyListeners();
   }
-  void updateDidPush(bool status) {
-    didPush = status;
-    notifyListeners();
-  }
+  
   Future<void> updateHasProfile() async {
     hasProfile = await SharedPreferencesUtil.hasProfile();
     notifyListeners();
@@ -231,8 +227,9 @@ class ProfileInfoModel extends ChangeNotifier {
     notifyListeners();
   }
   Future<void> updateProfilePicture() async {
-    String persistedFilePath = await SharedPreferencesUtil.getPersistedFilePath();
-    profilePicture = Util.buildProfilePicture(persistedFilePath);
+    String imageString = await SharedPreferencesUtil.getPictureBytesString();
+    Uint8List? pictureBytes = Util.convertBase64ToImage(imageString);
+    if (pictureBytes != null) profilePicture = MemoryImage(pictureBytes);
     notifyListeners();
   }
   Future<void> updateSentToken() async {
@@ -260,13 +257,8 @@ class ProfileInfoModel extends ChangeNotifier {
     isLogInUser = await SharedPreferencesUtil.isLogIn();
     notifyListeners();
   }
-  void updateForgotPasswordTemp(bool status) {
-    forgotPassword = status;
-    notifyListeners();
-  }
-  
-  void updateUserTemp(User? currentUser) {
-    user = currentUser;
+  void updateDidPush(bool status) {
+    didPush = status;
     notifyListeners();
   }
 }

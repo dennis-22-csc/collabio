@@ -98,9 +98,7 @@ void _onFocusChange() {
 
   Future<void> _selectProfilePicture() async {
     try {
-    bool directoryExists = await Util.checkAndCreateDirectory(context);
-
-    if (directoryExists) {
+    
       // Permission granted, launch picker
       final picker = ImagePicker();
       final pickedImage = await picker.pickImage(source: ImageSource.gallery,);
@@ -111,11 +109,6 @@ void _onFocusChange() {
           _profilePicture = compressedImageFile;
         });
       }
-    } else {
-      // Permission not granted, route to ProjectScreen
-      if (!mounted) return;
-      context.goNamed("projects");
-    }
 
     } catch (error) {
       showStatusDialog("Upload Error", error.toString());
@@ -134,11 +127,9 @@ void _onFocusChange() {
   late String title;
 
   if (_profilePicture != null) {
-    // Save profile picture to internal storage
+    
       String? imageString = await Util.getImageString(_profilePicture!);
-      bool savedPicture = await Util.saveProfilePicture(imageString);
       
-      if (savedPicture) {
         String result = await Util.saveProfileInformation(
         firstName: firstName,
         lastName: lastName,
@@ -157,6 +148,7 @@ void _onFocusChange() {
           'about': about,
           'tags': _selectedTags,
           'email': email,
+          'pictureBytes': imageString,
         };
         await SharedPreferencesUtil.setUserInfo(userInfo);
         await SharedPreferencesUtil.setHasProfile(true);
@@ -167,22 +159,16 @@ void _onFocusChange() {
         msg = "Profile created successfully";
         title = "Success";
       } catch (e) {
-        msg = 'Error $e.toString()';
-        //msg = "Can't create profile at the moment";
+        //msg = 'Error $e.toString()';
+        msg = "Can't create profile at the moment";
         title = "Error";
-        SharedPreferencesUtil.saveProfilePicturePath('');
       }
     } else {
-      msg = "Failed to create profile $result";
-      //msg = "Can't create profile at the moment";
-      title = "Error";
-      SharedPreferencesUtil.saveProfilePicturePath('');
-    }
-    } else {
-      msg = 'Unable to save profile picture to internal storage.';
+      //msg = "Failed to create profile $result";
+      msg = "Can't create profile at the moment";
       title = "Error";
     }
-    
+   
   } else {
     msg = 'Please select and upload a profile picture.';
     title = "Error";

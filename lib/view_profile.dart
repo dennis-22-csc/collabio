@@ -160,16 +160,7 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
 
   void selectProfilePicture() async {
     try {
-      File? currentProfilePicture;
-
-      bool directoryExists = await Util.checkAndCreateDirectory(context);
-      String currentProfilePicturePath = await SharedPreferencesUtil.getPersistedFilePath();
-        
-      if (currentProfilePicturePath.isNotEmpty) {
-        currentProfilePicture = File(currentProfilePicturePath);
-      }
-
-    if (directoryExists) {
+      
       final picker = ImagePicker();
       final pickedImage = await picker.pickImage(source: ImageSource.gallery, );
       if (pickedImage != null) {
@@ -180,10 +171,10 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
         File newProfilePicture = compressedImageFile!;
         
         String imageString = await Util.getImageString(newProfilePicture);
-        bool saved = await Util.saveProfilePicture(imageString);
-        if (saved) {
+        
           final result = await updateProfileSection(_email!, "Profile Picture", imageString);
           if (result == "Profile section Profile Picture updated successfully") {
+            SharedPreferencesUtil.updateUserInfo('Profile Picture', imageString);
               _profileInfoModel.updateProfilePicture();
           } else {
             WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -191,18 +182,8 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
               const SnackBar(content: Text("Failed to connect to server")),
             );
             });
-            if (currentProfilePicture != null) {
-              String? currentProfilePictureString = await Util.getImageString(currentProfilePicture);
-              await Util.saveProfilePicture(currentProfilePictureString);
-              _profileInfoModel.updateProfilePicture();
-            } else {
-              await SharedPreferencesUtil.saveProfilePicturePath('');
-              _profileInfoModel.updateProfilePicture();
-            }
           }
-        }
       }
-    } 
     } catch (error) {
       showStatusDialog("Upload Error", error.toString());
     }
@@ -225,7 +206,7 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
                     onPressed: () {
                       //context.pop();
                       context.goNamed("projects");
-                      profileInfoModel.updateDidPush(true);
+                      if(!profileInfoModel.didPush) profileInfoModel.updateDidPush(true);
                     },
                   ),
                   title: const Text('Your Profile')

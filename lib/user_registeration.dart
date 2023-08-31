@@ -123,7 +123,7 @@ Widget build(BuildContext context) {
                 const SizedBox(height: 8.0),
                 ElevatedButton(
                   onPressed: () {
-                    profileInfoModel.updateLogOutUserStatusTemp(true);
+                    context.goNamed("login");
                   },
                   child: const Text('Login'),
                 ),
@@ -147,9 +147,9 @@ void showStatusDialog(String title, String content){
             ElevatedButton(
               onPressed: () {
                 if (title == 'Success in registration') {
-                  profileInfoModel.updateUserTemp(userCredential?.user);
+                  context.goNamed("email-verification");
                 }else if (title == "You already have an account") {
-                  profileInfoModel.updateLogOutUserStatusTemp(true);
+                  context.goNamed("login");
                 } else {
                   context.pop();
                 }

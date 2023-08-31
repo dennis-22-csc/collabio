@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:collabio/model.dart';
 
 class WebViewContainer extends StatefulWidget {
   final String url;
@@ -47,9 +50,18 @@ class _WebViewContainerState extends State<WebViewContainer> {
 
 @override
   Widget build(BuildContext context) {
+    final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
+    
     return Scaffold(
       backgroundColor: const Color(0xFFEBDDFF),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            context.goNamed("projects");
+            if(!profileInfoModel.didPush) profileInfoModel.updateDidPush(true);
+          },
+        ),
         title: const Text("Delete Account"),
         elevation: 50,
       ),

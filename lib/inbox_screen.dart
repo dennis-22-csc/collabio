@@ -29,15 +29,15 @@ class _InboxScreenState extends State<InboxScreen> {
 
  @override
 Widget build(BuildContext context) {
-  final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
-   
+   final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
+    
   return Scaffold(
     appBar: AppBar(
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: () {
           context.goNamed("projects");
-          profileInfoModel.updateDidPush(true);
+          if(!profileInfoModel.didPush) profileInfoModel.updateDidPush(true);
         },
       ),
       title: const Text('Inbox'),

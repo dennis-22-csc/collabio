@@ -47,15 +47,14 @@ class _MyProjectPageState extends State<MyProjectPage> {
     _searchFocusNode.unfocus();
   
   }
-  
+
   Future<void> logUserOut() async {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.goNamed("login");
-    profileInfoModel.updateLogOutUserStatusTemp(true);
-    profileInfoModel.updateUserTemp(null);
-     });
+    });
     await FirebaseAuth.instance.signOut();
     SharedPreferencesUtil.setLogOutStatus(true);
+    profileInfoModel.updateLogOutUserStatus();
   }
   
   @override
@@ -273,6 +272,25 @@ class _MyProjectPageState extends State<MyProjectPage> {
             ElevatedButton(
               onPressed: () {
                 context.goNamed("create-profile");
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  void showErrorDialog(String content){
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Hi there'),
+          content: Text(content),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                context.pop();
               },
               child: const Text('OK'),
             ),

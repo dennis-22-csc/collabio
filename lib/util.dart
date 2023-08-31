@@ -1,8 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:collabio/network_handler.dart';
 import 'package:collabio/model.dart';
@@ -14,19 +12,7 @@ import 'dart:convert';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class Util {
-  static FileImage? buildProfilePicture(String? persistedFilePath) {
-  if (persistedFilePath == null || persistedFilePath.isEmpty) {
-    return null;
-  }
-
-  File existingProfilePicture = File(persistedFilePath);
-  if (existingProfilePicture.existsSync()) {
-    return FileImage(existingProfilePicture);
-  } else {
-    return null;
-  }
-}
-
+  
   static Future<File?> compressFile(File file) async{
     
     final filePath = file.absolute.path;
@@ -102,7 +88,7 @@ static Uint8List? convertBase64ToImage(String imageString) {
     } catch (e) {
       return null;
     }
-  }
+}
 
 static Map<String, dynamic> convertJsonToUserInfo(Map<String, dynamic> jsonData) {
   List<String> tagsList = List<String>.from(jsonData['tags']);
@@ -140,81 +126,6 @@ static Future<String> saveProfileInformation({
     String result = await sendUserData(userData);
     return result;
   }
-
-  static Future<bool> requestPermission(Permission permission) async {
-    if (await permission.isGranted) {
-      return true;
-    } else {
-      var result = await permission.request();
-      if (result == PermissionStatus.granted) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-static Future<bool> saveProfilePicture(String imageString) async {
-  Directory? directory;
-
-  if (Platform.isAndroid) {
-    directory = await getExternalStorageDirectory();
-    if (directory != null) {
-      String newPath = "";
-
-      List<String> paths = directory.path.split("/");
-      for (int x = 1; x < paths.length; x++) {
-        String folder = paths[x];
-        if (folder != "Android") {
-          newPath += "/$folder";
-        } else {
-          break;
-        }
-      }
-      newPath = "$newPath/Collabio/profile_picture";
-      directory = Directory(newPath);
-    }
-  }
-
-  if (directory != null && !await directory.exists()) {
-    await directory.create(recursive: true);
-  }
-
-  if (directory != null && await directory.exists()) {
-    // Delete any existing picture in the directory
-    if (directory.listSync().isNotEmpty) {
-      for (var file in directory.listSync()) {
-        if (file is File) {
-          await file.delete();
-        }
-      }
-    }
-
-  List<int> imageBytes = base64Decode(imageString);
-  File saveFile = File("${directory.path}/profile_image.jpg");
-  await saveFile.writeAsBytes(imageBytes);
-  await SharedPreferencesUtil.saveProfilePicturePath(saveFile.path);
-  return true;
-}
-
-  return false;
-}
-
-   static Future<bool> checkAndCreateDirectory(BuildContext context) async {
-     if (Platform.isAndroid) {
-       if (await requestPermission(Permission.storage)) {
-         Directory? directory = await getExternalStorageDirectory();
-         if (directory != null) {
-           String newPath = "${directory.path}/Collabio/profile_picture";
-           directory = Directory(newPath);
-           if (!await directory.exists()) {
-             await directory.create(recursive: true);
-           }
-           return true; // Directory creation successful
-         }
-       }
-     }
-     return false; // Directory creation failed
-   }
 
   static bool areEquivalentStrings(String str1, String str2) {
   List<String> words1 = str1.split(' ');
@@ -348,10 +259,7 @@ class SharedPreferencesUtil {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('firebase_token', token);
   }
-  static Future<void> saveProfilePicturePath(String pictureUri) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('profile_picture', pictureUri);
-  }
+  
   static Future<void> setUserInfo(Map<String, dynamic> userInfo) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String firstName = userInfo['firstName'];
@@ -359,12 +267,14 @@ class SharedPreferencesUtil {
     String about = userInfo['about'];
     List<String> tags = userInfo['tags'];
     String email = userInfo['email'];
+    String pictureBytes = userInfo['pictureBytes'];
 
     await prefs.setString('firstName', firstName);
     await prefs.setString('lastName', lastName);
     await prefs.setString('about', about);
     await prefs.setStringList('tags', tags);
     await prefs.setString('email', email);
+    await prefs.setString('pictureBytes', pictureBytes);
   }
   static updateUserInfo(String title, dynamic content) async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -379,6 +289,8 @@ class SharedPreferencesUtil {
           await prefs.setString('about', content);
         case 'Skills':
           await prefs.setStringList('tags', content);
+        case 'Profile Picture':
+        await prefs.setString('pictureBytes', content);
         default:
           break;
       }
@@ -402,9 +314,9 @@ class SharedPreferencesUtil {
     return prefs.getBool('login') ?? false;
   }
 
-  static Future<String> getPersistedFilePath() async {
+  static Future<String> getPictureBytesString() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('profile_picture') ?? '';
+    return prefs.getString('pictureBytes') ?? '';
   }
 
   static Future<String> getEmail() async {

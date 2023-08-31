@@ -235,43 +235,31 @@ Future<void> getProfileInfo() async {
     final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
     profileInfoModel.updateLogOutUserStatusTemp(widget.isLogOutUser);
     profileInfoModel.updateLogInUserStatusTemp(widget.isLoginUser);
-    profileInfoModel.updateUserTemp(widget.user);
-
+    
     appTheme = ThemeData(
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       useMaterial3: true,
     );
 
     final goRouter = GoRouter(
-      refreshListenable: profileInfoModel,
-      //initialLocation: '/',
-      redirect: (context, state) {
-         
-        if (profileInfoModel.user == null) {
-          if (profileInfoModel.isLogOutUser && !profileInfoModel.forgotPassword) return '/login'; // Redirect to the login screen.
-          
-          if (!profileInfoModel.isLogOutUser && !profileInfoModel.forgotPassword) return '/registration'; // Redirect to the registration screen.
-
-          if (profileInfoModel.forgotPassword) return "/password-reset";
-        
-        } else {
-         
-          if (profileInfoModel.user?.email == null) return '/registration'; // Redirect to the registration screen.
-          
-          if (profileInfoModel.user?.emailVerified == false) return '/email-verification'; // Redirect to the email verification screen.
-        
-          if (profileInfoModel.user?.emailVerified == true && !profileInfoModel.isLogInUser && !profileInfoModel.isLogOutUser) return '/login'; // Redirect to the login screen
-        }
-
-        // Default case, no need to redirect
-        return null;
-      },
-
       routes: [
         GoRoute(
           path: '/',
           builder: (context, state) {
-             if (_errorOccurred) {
+            if (widget.user == null) {
+              if (profileInfoModel.isLogOutUser) return const LoginScreen(); // Redirect to the login screen.
+          
+              if (!profileInfoModel.isLogOutUser) return const RegistrationScreen(); // Redirect to the registration screen.
+            } else {
+         
+              if (widget.user?.email == null) return const RegistrationScreen(); // Redirect to the registration screen.
+          
+              if (widget.user?.emailVerified == false) return const EmailVerificationScreen(); // Redirect to the email verification screen.
+        
+              if (widget.user?.emailVerified == true && !profileInfoModel.isLogInUser && !profileInfoModel.isLogOutUser) return const LoginScreen(); // Redirect to the login screen
+            }
+
+            if (_errorOccurred) {
               return _buildErrorScreen();
             }
             if (!_networkOperationCompleted) {
@@ -325,9 +313,23 @@ Future<void> getProfileInfo() async {
           name: "view-user-profile",
           path: '/view-user-profile/:id',
           builder: (context, state) {
+            if (widget.user == null) {
+              if (profileInfoModel.isLogOutUser) return const LoginScreen(); // Redirect to the login screen.
+          
+              if (!profileInfoModel.isLogOutUser) return const RegistrationScreen(); // Redirect to the registration screen.
+            } else {
+         
+              if (widget.user?.email == null) return const RegistrationScreen(); // Redirect to the registration screen.
+          
+              if (widget.user?.emailVerified == false) return const EmailVerificationScreen(); // Redirect to the email verification screen.
+        
+              if (widget.user?.emailVerified == true && !profileInfoModel.isLogInUser && !profileInfoModel.isLogOutUser) return const LoginScreen(); // Redirect to the login screen
+            }
+
             if (_errorOccurred) {
               return _buildErrorScreen();
             }
+
             if (!_networkOperationCompleted) {
               return _buildLoadingIndicator();
             }
@@ -351,12 +353,27 @@ Future<void> getProfileInfo() async {
           name: "view-matching-project",
           path: '/view-matching-project/:id',
           builder: (context, state) {
+            if (widget.user == null) {
+              if (profileInfoModel.isLogOutUser) return const LoginScreen(); // Redirect to the login screen.
+          
+              if (!profileInfoModel.isLogOutUser) return const RegistrationScreen(); // Redirect to the registration screen.
+            } else {
+         
+              if (widget.user?.email == null) return const RegistrationScreen(); // Redirect to the registration screen.
+          
+              if (widget.user?.emailVerified == false) return const EmailVerificationScreen(); // Redirect to the email verification screen.
+        
+              if (widget.user?.emailVerified == true && !profileInfoModel.isLogInUser && !profileInfoModel.isLogOutUser) return const LoginScreen(); // Redirect to the login screen
+            }
+
             if (_errorOccurred) {
               return _buildErrorScreen();
             }
+
             if (!_networkOperationCompleted) {
               return _buildLoadingIndicator();
             }
+
             final projectId = state.pathParameters["id"] as String;
             return ViewProjectScreen(projectId: projectId,);
           },
@@ -397,13 +414,27 @@ Future<void> getProfileInfo() async {
           name: "view-inbox",
           path: '/view-inbox',
           builder: (context, state) {
-            
+            if (widget.user == null) {
+              if (profileInfoModel.isLogOutUser) return const LoginScreen(); // Redirect to the login screen.
+          
+              if (!profileInfoModel.isLogOutUser) return const RegistrationScreen(); // Redirect to the registration screen.
+            } else {
+         
+              if (widget.user?.email == null) return const RegistrationScreen(); // Redirect to the registration screen.
+          
+              if (widget.user?.emailVerified == false) return const EmailVerificationScreen(); // Redirect to the email verification screen.
+        
+              if (widget.user?.emailVerified == true && !profileInfoModel.isLogInUser && !profileInfoModel.isLogOutUser) return const LoginScreen(); // Redirect to the login screen
+            }
+
             if (_errorOccurred) {
               return _buildErrorScreen();
             }
+
             if (!_networkOperationCompleted) {
               return _buildLoadingIndicator();
             }
+
             if (!_hasProfile) {
               return const MyProjectPage();
             }
@@ -437,15 +468,30 @@ Future<void> getProfileInfo() async {
           name: "create-your-profile",
           path: '/create-your-profile',
           builder: (context, state) {
+            if (widget.user == null) {
+              if (profileInfoModel.isLogOutUser) return const LoginScreen(); // Redirect to the login screen.
+          
+              if (!profileInfoModel.isLogOutUser) return const RegistrationScreen(); // Redirect to the registration screen.
+            } else {
+         
+              if (widget.user?.email == null) return const RegistrationScreen(); // Redirect to the registration screen.
+          
+              if (widget.user?.emailVerified == false) return const EmailVerificationScreen(); // Redirect to the email verification screen.
+        
+              if (widget.user?.emailVerified == true && !profileInfoModel.isLogInUser && !profileInfoModel.isLogOutUser) return const LoginScreen(); // Redirect to the login screen
+            }
+
             if (_errorOccurred) {
               return _buildErrorScreen();
             }
             if (!_networkOperationCompleted) {
               return _buildLoadingIndicator();
             }
+
             if (_hasProfile) {
               return const MyProjectPage();
             }
+
             return const ProfileScreen();
           },
         ),

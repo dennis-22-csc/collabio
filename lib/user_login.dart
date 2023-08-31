@@ -6,7 +6,7 @@ import 'package:collabio/network_handler.dart';
 import 'package:collabio/database.dart';
 import 'package:collabio/model.dart';
 import 'package:provider/provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
 
@@ -48,7 +48,6 @@ class _LoginScreenState extends State<LoginScreen> {
       if (userCredential.user?.emailVerified == true) {
         SharedPreferencesUtil.setLogInStatus(true);
         profileInfoModel.updateProfileInfo();
-        profileInfoModel.updateUserTemp(userCredential.user);
         profileInfoModel.updateDidPush(false);
         setState(() {
         _login = true;
@@ -92,17 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
             await SharedPreferencesUtil.setUserInfo(fetchResult);
             await SharedPreferencesUtil.setHasProfile(true);
             await SharedPreferencesUtil.setLogInStatus(true);
-            bool storagePermitted = await Util.requestPermission(Permission.storage);
-            if (!storagePermitted) {
-              _showError("You need to grant storage access for media storage");
-              await _auth.signOut();
-              await SharedPreferencesUtil.setHasProfile(false);
-              await profileInfoModel.updateProfileInfo();
-              SharedPreferencesUtil.setLogOutStatus(true);
-              profileInfoModel.updateLogOutUserStatus();
-            }
-            await Util.saveProfilePicture(fetchResult["pictureBytes"]);
-            await profileInfoModel.updateProfileInfo();
+            profileInfoModel.updateProfileInfo();
           } else {
             _showError("Unable to fetch dependencies at the moment.");
             //_showError(fetchResult);
@@ -285,7 +274,7 @@ Widget buildLoginScreen() {
                   const SizedBox(height: 8.0),
                   ElevatedButton(
                     onPressed: () {
-                       profileInfoModel.updateLogOutUserStatusTemp(false);
+                       context.goNamed("registration");
                     },
                     child: const Text('Create Account'),
                   ),
@@ -293,7 +282,7 @@ Widget buildLoginScreen() {
               ),
               ElevatedButton(
                 onPressed: () {
-                  profileInfoModel.updateForgotPasswordTemp(true);
+                  context.goNamed("password-reset");
                 },
                 child: const Text('Forgot Password?'),
               ),

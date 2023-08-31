@@ -26,7 +26,6 @@ class _LogOutScreenState extends State<LogOutScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.goNamed("login");
     profileInfoModel.updateLogOutUserStatusTemp(true);
-    profileInfoModel.updateUserTemp(null);
      });
     await FirebaseAuth.instance.signOut();
     SharedPreferencesUtil.setLogOutStatus(true);
