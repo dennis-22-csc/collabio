@@ -48,8 +48,8 @@ android {
         applicationId "com.denniscode.collabio"
         minSdkVersion 19
         targetSdkVersion 33
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        versionCode 6
+        versionName "1.0.6"
     }
 
     signingConfigs {

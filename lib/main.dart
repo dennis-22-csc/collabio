@@ -157,6 +157,7 @@ Future<void> getProfileInfo() async {
           await SharedPreferencesUtil.setSentToken(false);
         }
       } 
+          
       WidgetsBinding.instance.addPostFrameCallback((_) async {
       final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
       await profileInfoModel.updateProfileInfo();
@@ -424,10 +425,29 @@ Future<void> getProfileInfo() async {
         GoRoute(
           name: "create-profile",
           path: '/create-profile',
-          pageBuilder: (context, state) => MaterialPage<void>(
-            key: state.pageKey,
-            child: const ProfileScreen(),
-          ),
+          pageBuilder: (context, state) {
+            
+            return MaterialPage<void>(
+              key: state.pageKey,
+              child: const ProfileScreen(),
+            );
+          },
+        ),
+        GoRoute(
+          name: "create-your-profile",
+          path: '/create-your-profile',
+          builder: (context, state) {
+            if (_errorOccurred) {
+              return _buildErrorScreen();
+            }
+            if (!_networkOperationCompleted) {
+              return _buildLoadingIndicator();
+            }
+            if (_hasProfile) {
+              return const MyProjectPage();
+            }
+            return const ProfileScreen();
+          },
         ),
         GoRoute(
           name: "chat",

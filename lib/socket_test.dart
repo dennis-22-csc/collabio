@@ -397,8 +397,8 @@ If you are interested in contributing to this app and helping people achieve the
 }
 ];
 
- final messageResponse = await dataSender.sendMessageData(message2);
- print(messageResponse);
+ //final messageResponse = await dataSender.sendMessageData(message2);
+ //print(messageResponse);
   
   //final projectResponse = await dataSender.sendProjectData(project3);
   //print('Project response: $projectResponse');
