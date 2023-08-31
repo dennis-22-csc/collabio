@@ -167,7 +167,7 @@ String _getSeparatorText(String timestamp) {
                                 style: const TextStyle(
                                     fontSize: 12, color: Colors.grey),
                               ),
-                              buildMessageStatusIcon(message.status),
+                              buildMessageStatusIcon(message),
                             ],
                           ),
                         ),
@@ -241,8 +241,8 @@ String _getSeparatorText(String timestamp) {
   );
 }
 
-  Widget buildMessageStatusIcon(String status) {
-  switch (status) {
+  Widget buildMessageStatusIcon(Message message) {
+  switch (message.status) {
     case 'sent':
       return const Row(
         children: [
@@ -264,6 +264,16 @@ String _getSeparatorText(String timestamp) {
           Icon(Icons.error, color: Colors.red, size: 10),
         ],
       );
+    case 'received':
+      if (message.senderEmail == widget.currentUserEmail) {
+        return const Row(
+        children: [
+          SizedBox(width: 4.0),
+          Icon(Icons.check, color: Colors.blue, size: 15),
+        ],
+      );
+      }
+      return const SizedBox.shrink();
     default:
       return const SizedBox.shrink();
   }

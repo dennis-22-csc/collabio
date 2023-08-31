@@ -52,6 +52,12 @@ class DatabaseHelper {
     );
   }
 
+  static Future<void> clearDatabase() async {
+    final db = await _database;
+    db.delete(_projectsTable);
+    db.delete(_messagesTable);
+  }
+
    // Create the projects table
   static Future<void> _createProjectsTable(Database db) async {
     await db.execute('''
@@ -89,7 +95,7 @@ class DatabaseHelper {
     final database = await _database;
     final batch = database.batch();
     for (Project project in projects) {
-      batch.insert(_projectsTable, project.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
+      batch.insert(_projectsTable, project.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
     }
     await batch.commit();
   }
@@ -101,7 +107,7 @@ class DatabaseHelper {
 
   List<String> insertedIds = [];
   for (Message message in messages) {
-    batch.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    batch.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
     insertedIds.add(message.id);
   }
   await batch.commit();
@@ -111,7 +117,7 @@ class DatabaseHelper {
 static Future<bool> insertMessage(Map<String, dynamic> jsonData) async {
   Database db = await _database; 
   final Message message = Message.fromMap(jsonData);
-  await db.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  await db.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
   return true;
 }
 

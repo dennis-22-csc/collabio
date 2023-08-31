@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:collabio/project_tab.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-//import 'package:collabio/util.dart';
+import 'package:collabio/util.dart';
 import 'package:provider/provider.dart';
 import 'package:collabio/model.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class MyProjectPage extends StatefulWidget {
   
@@ -50,22 +49,15 @@ class _MyProjectPageState extends State<MyProjectPage> {
   }
   
   Future<void> logUserOut() async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      context.goNamed("login");
+    profileInfoModel.updateLogOutUserStatusTemp(true);
+    profileInfoModel.updateUserTemp(null);
+     });
     await FirebaseAuth.instance.signOut();
-    User? currentUser = FirebaseAuth.instance.currentUser;
-    await currentUser?.reload();
-
-    /*if (currentUser == null) {
-      SharedPreferencesUtil.setLogOutStatus(true);
-      profileInfoModel.updateLogOutUserStatus();
-      profileInfoModel.updateUserTemp(currentUser);
-    }*/
-    
+    SharedPreferencesUtil.setLogOutStatus(true);
   }
   
-  void openDeleteAccountUrl() async {
-    final Uri url = Uri.parse('https://collabio.denniscode.tech/del-account');
-    if (await canLaunchUrl(url)) await launchUrl(url);
-  }
   @override
   Widget build(BuildContext context) {
    profileInfoModel = Provider.of<ProfileInfoModel>(context);
@@ -106,16 +98,20 @@ class _MyProjectPageState extends State<MyProjectPage> {
         }
       },
     ),
-  /*ListTile(
+  ListTile(
     title: const Text('Log Out'),
     onTap: () {
-      logUserOut();
+      if (profileInfoModel.didPush) {
+        logUserOut();
+      } else {
+        context.goNamed("logout");
+      }
     },
-  ),*/
+  ),
   ListTile(
     title: const Text('Delete Account'),
     onTap: () {
-      openDeleteAccountUrl();
+      context.pushNamed("web-view", pathParameters: {'url': "https://collabio.denniscode.tech/del-account"});
     },
   ),
 ];

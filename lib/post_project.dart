@@ -27,7 +27,8 @@ class _ProjectUploadScreenState extends State<ProjectUploadScreen> with SingleTi
   bool _done = false;
   final FocusNode _focusNode = FocusNode();
   late StreamSubscription<bool> keyboardSubscription;
-  
+  ProfileInfoModel? _profileInfoModel;
+
   @override
   void initState() {
     super.initState();
@@ -120,6 +121,7 @@ void _onFocusChange() {
     final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
     _about = profileInfoModel.about; 
     _name = profileInfoModel.name;
+    _profileInfoModel = profileInfoModel;
 
     final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final double tagHeight = keyboardHeight + 50;
@@ -130,7 +132,9 @@ void _onFocusChange() {
         leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              context.pop();
+              //context.pop();
+              context.goNamed("projects");
+              _profileInfoModel!.updateDidPush(true);
             },
           ),
         title: const Text('Publish Project'),
@@ -281,6 +285,7 @@ void _onFocusChange() {
             ElevatedButton(
               onPressed: () {
                 context.goNamed("projects");
+                _profileInfoModel!.updateDidPush(true);
               },
               child: const Text('OK'),
             ),

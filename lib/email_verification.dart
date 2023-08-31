@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:collabio/model.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
   
@@ -119,6 +120,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
           actions: [
             ElevatedButton(
               onPressed: () {
+                context.goNamed("login");
                  profileInfoModel.updateUserTemp(currentUser);
               },
               child: const Text('OK'),

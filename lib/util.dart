@@ -358,11 +358,13 @@ class SharedPreferencesUtil {
     String lastName = userInfo['lastName'];
     String about = userInfo['about'];
     List<String> tags = userInfo['tags'];
+    String email = userInfo['email'];
 
     await prefs.setString('firstName', firstName);
     await prefs.setString('lastName', lastName);
     await prefs.setString('about', about);
     await prefs.setStringList('tags', tags);
+    await prefs.setString('email', email);
   }
   static updateUserInfo(String title, dynamic content) async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -403,6 +405,11 @@ class SharedPreferencesUtil {
   static Future<String> getPersistedFilePath() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('profile_picture') ?? '';
+  }
+
+  static Future<String> getEmail() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('email') ?? '';
   }
 
   static Future<String> getFirstName() async {

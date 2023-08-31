@@ -23,7 +23,8 @@ import 'package:collabio/inbox_screen.dart';
 import 'package:collabio/email_verification.dart';
 import 'package:collabio/create_profile.dart';
 import 'package:collabio/chat_screen.dart';
-
+import 'package:collabio/logout_screen.dart';
+import 'package:collabio/web_view_container.dart';
 
 void main() async {
   late bool hasInternet;
@@ -48,10 +49,6 @@ void main() async {
     FirebaseMessaging.instance.onTokenRefresh.listen((token) {
       SharedPreferencesUtil.saveToken(token);
     });
-
-    /*if (isLogOutUser) {
-      await auth.signOut();
-    }*/
 
     if (auth.currentUser != null) {
       
@@ -105,7 +102,7 @@ class _MyAppState extends State<MyApp> {
   late String _token; 
   String? _name;
   String? _email;
-late String location;
+
   @override
   void initState() {
     super.initState();
@@ -246,12 +243,9 @@ Future<void> getProfileInfo() async {
 
     final goRouter = GoRouter(
       refreshListenable: profileInfoModel,
-      initialLocation: '/',
+      //initialLocation: '/',
       redirect: (context, state) {
          
-        // Check if an error occurred
-        if (_errorOccurred) return null; // No redirect needed, show the error screen in the current route.
-        
         if (profileInfoModel.user == null) {
           if (profileInfoModel.isLogOutUser && !profileInfoModel.forgotPassword) return '/login'; // Redirect to the login screen.
           
@@ -265,11 +259,8 @@ Future<void> getProfileInfo() async {
           
           if (profileInfoModel.user?.emailVerified == false) return '/email-verification'; // Redirect to the email verification screen.
         
-          if (profileInfoModel.user?.emailVerified == true && !profileInfoModel.isLogInUser && !profileInfoModel.isLogOutUser) return '/login'; // Redirect to the login screen.
-
-         }
-        // Check if network operation is not completed
-        if (!_networkOperationCompleted) return null; // No redirect needed, stay on the current route.
+          if (profileInfoModel.user?.emailVerified == true && !profileInfoModel.isLogInUser && !profileInfoModel.isLogOutUser) return '/login'; // Redirect to the login screen
+        }
 
         // Default case, no need to redirect
         return null;
@@ -279,13 +270,13 @@ Future<void> getProfileInfo() async {
         GoRoute(
           path: '/',
           builder: (context, state) {
-            
-            if (_errorOccurred) {
+             if (_errorOccurred) {
               return _buildErrorScreen();
             }
             if (!_networkOperationCompleted) {
               return _buildLoadingIndicator();
             }
+            
             return const MyProjectPage();
           },
         ),
@@ -295,6 +286,14 @@ Future<void> getProfileInfo() async {
           pageBuilder: (context, state) => MaterialPage<void>(
             key: state.pageKey,
             child: const LoginScreen(),
+          ),
+        ),
+        GoRoute(
+          name: "logout",
+          path: '/logout',
+          pageBuilder: (context, state) => MaterialPage<void>(
+            key: state.pageKey,
+            child: const LogOutScreen(),
           ),
         ),
         GoRoute(
@@ -359,6 +358,14 @@ Future<void> getProfileInfo() async {
             }
             final projectId = state.pathParameters["id"] as String;
             return ViewProjectScreen(projectId: projectId,);
+          },
+        ),
+        GoRoute(
+          name: "web-view",
+          path: '/web-view/:url',
+          builder: (context, state) {
+            final url = state.pathParameters["url"] as String;
+            return WebViewContainer(url: url,);
           },
         ),
         GoRoute(

@@ -223,7 +223,9 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
                   leading: IconButton(
                     icon: const Icon(Icons.arrow_back),
                     onPressed: () {
-                      context.pop();
+                      //context.pop();
+                      context.goNamed("projects");
+                      profileInfoModel.updateDidPush(true);
                     },
                   ),
                   title: const Text('Your Profile')

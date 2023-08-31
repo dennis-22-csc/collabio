@@ -29,12 +29,15 @@ class _InboxScreenState extends State<InboxScreen> {
 
  @override
 Widget build(BuildContext context) {
+  final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
+   
   return Scaffold(
     appBar: AppBar(
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: () {
           context.goNamed("projects");
+          profileInfoModel.updateDidPush(true);
         },
       ),
       title: const Text('Inbox'),
@@ -124,7 +127,7 @@ Widget build(BuildContext context) {
       ),
       Flexible(
         flex: 0,
-        child: buildMessageStatusIcon(mostRecentMessage.status),
+        child: buildMessageStatusIcon(mostRecentMessage),
       )
     ],
   ),
@@ -160,8 +163,8 @@ Widget _buildTimestamp(String timestamp) {
 }
 
 
-Widget buildMessageStatusIcon(String status) {
-  switch (status) {
+Widget buildMessageStatusIcon(Message message) {
+  switch (message.status) {
     case 'sent':
       return const Row(
         children: [
@@ -183,6 +186,16 @@ Widget buildMessageStatusIcon(String status) {
           Icon(Icons.error, color: Colors.red, size: 15),
         ],
       );
+    case 'received':
+      if (message.senderEmail == widget.currentUserEmail) {
+        return const Row(
+        children: [
+          SizedBox(width: 4.0),
+          Icon(Icons.check, color: Colors.blue, size: 15),
+        ],
+      );
+      }
+      return const SizedBox.shrink();
     default:
       return const SizedBox.shrink();
   }

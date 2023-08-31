@@ -22,6 +22,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   late ProfileInfoModel profileInfoModel;
 
   Future<void> registerUser(String email, String password) async {
+    
     try {
       userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
@@ -30,7 +31,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       showStatusDialog('Success in registration', 'Please verify email');
     } on FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
-        showStatusDialog('Success in re-registration', 'Please login with new password');
+        showStatusDialog('You already have an account', 'Please proceed to login');
       } else {
         // User registration failed
         showStatusDialog('Error in registration', '$e');
@@ -145,9 +146,11 @@ void showStatusDialog(String title, String content){
           actions: [
             ElevatedButton(
               onPressed: () {
-                if (title == 'Success in registration' || title == 'Success in re-registration') {
+                if (title == 'Success in registration') {
                   profileInfoModel.updateUserTemp(userCredential?.user);
-                }else {
+                }else if (title == "You already have an account") {
+                  profileInfoModel.updateLogOutUserStatusTemp(true);
+                } else {
                   context.pop();
                 }
               },

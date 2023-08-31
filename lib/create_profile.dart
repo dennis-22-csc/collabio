@@ -156,6 +156,7 @@ void _onFocusChange() {
           'lastName': lastName,
           'about': about,
           'tags': _selectedTags,
+          'email': email,
         };
         await SharedPreferencesUtil.setUserInfo(userInfo);
         await SharedPreferencesUtil.setHasProfile(true);

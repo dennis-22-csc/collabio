@@ -29,13 +29,13 @@ class _LoginScreenState extends State<LoginScreen> {
   late bool _hasProfile;
   bool _login = false;
   bool isObscure= false;
+  bool _accountSwitch = false;
 
   @override
   void initState() {
     super.initState();
     profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
     _hasProfile = profileInfoModel.hasProfile;
-    //logUserOut();
     initDatabase();
   }
 
@@ -47,19 +47,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (userCredential.user?.emailVerified == true) {
         SharedPreferencesUtil.setLogInStatus(true);
-        profileInfoModel.updateLogInUserStatus();
+        profileInfoModel.updateProfileInfo();
         profileInfoModel.updateUserTemp(userCredential.user);
+        profileInfoModel.updateDidPush(false);
         setState(() {
         _login = true;
+        if (email != profileInfoModel.email) {
+          _accountSwitch = true;
+        }
         });
         // Fetch dependencies
         await fetchApiData(userCredential.user, email);
-      } else {     
-        // User registration successful but not yet verified, navigate to email verification screen
-        //WidgetsBinding.instance.addPostFrameCallback((_) async {
-        //context.goNamed("email-verification", extra: userCredential.user);
-        //});
-      }
+      } 
     } on FirebaseAuthException catch (e) {
       String message;
       if (e.code == 'invalid-email') {
@@ -79,16 +78,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> fetchApiData(User? user, String email) async {
     try {
-      if (!_hasProfile) {
+      if (!_hasProfile || _accountSwitch) {
           final fetchResult = await fetchUserInfoFromApi(email);
           
           if (fetchResult == "No user is found") {
             await SharedPreferencesUtil.clearPreferences();
+            await DatabaseHelper.clearDatabase();
             SharedPreferencesUtil.setLogInStatus(true);
-            profileInfoModel.updateLogInUserStatus();
+            profileInfoModel.updateProfileInfo();
           } else if (fetchResult is Map<String, dynamic>) {
+            await SharedPreferencesUtil.clearPreferences();
+            await DatabaseHelper.clearDatabase();
             await SharedPreferencesUtil.setUserInfo(fetchResult);
             await SharedPreferencesUtil.setHasProfile(true);
+            await SharedPreferencesUtil.setLogInStatus(true);
             bool storagePermitted = await Util.requestPermission(Permission.storage);
             if (!storagePermitted) {
               _showError("You need to grant storage access for media storage");
@@ -101,8 +104,8 @@ class _LoginScreenState extends State<LoginScreen> {
             await Util.saveProfilePicture(fetchResult["pictureBytes"]);
             await profileInfoModel.updateProfileInfo();
           } else {
-             //_showError("Unable to fetch dependencies at the moment.");
-            _showError(fetchResult);
+            _showError("Unable to fetch dependencies at the moment.");
+            //_showError(fetchResult);
             return;
           }
       }
@@ -118,8 +121,8 @@ class _LoginScreenState extends State<LoginScreen> {
         projectsModel.updateProjects(tags, 10);
         });
       } else {
-        //_showError("Unable to fetch dependencies at the moment.");
-        _showError(projectResult);
+        _showError("Unable to fetch dependencies at the moment.");
+        //_showError(projectResult);
         return;
       }
 
@@ -127,8 +130,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (messageResult is List<Message>) {
         await DatabaseHelper.insertMessages(messageResult);
       } else {
-        //_showError("Unable to fetch dependencies at the moment.");
-        _showError(messageResult);
+        _showError("Unable to fetch dependencies at the moment.");
+        //_showError(messageResult);
         return;
       }
 
@@ -157,8 +160,8 @@ class _LoginScreenState extends State<LoginScreen> {
         _fetchCompleted = true;
       });
     } catch (error) {
-      //_showError("Unable to fetch dependencies at the moment.");
-      _showError("An error occurred: $error");
+      _showError("Unable to fetch dependencies at the moment.");
+      //_showError("An error occurred: $error");
     }
   }
 
@@ -169,19 +172,6 @@ class _LoginScreenState extends State<LoginScreen> {
       _fetchCompleted = true;
       _login = true;
     });
-  }
-
-  Future<void> logUserOut() async {
-    if (profileInfoModel.isLogOutUser) {
-      await FirebaseAuth.instance.signOut();
-      User? currentUser = FirebaseAuth.instance.currentUser;
-      await currentUser?.reload();
-      if (currentUser == null) {
-      SharedPreferencesUtil.setLogOutStatus(true);
-      profileInfoModel.updateLogOutUserStatus();
-      profileInfoModel.updateUserTemp(currentUser);
-      }
-    }
   }
 
   Future<void> initDatabase() async {

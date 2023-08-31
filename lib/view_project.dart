@@ -64,11 +64,8 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            if (widget.projectId == null) {
-              context.pop();
-            } else {
-              context.goNamed("projects");
-            }
+            context.goNamed("projects");
+            profileInfoModel.updateDidPush(true);
           },
         ),
         title: const Text('Project Details'),

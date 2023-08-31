@@ -176,6 +176,7 @@ class ProjectsModel extends ChangeNotifier {
 }
 
 class ProfileInfoModel extends ChangeNotifier {
+  String? email;
   String? firstName;
   String? lastName;
   String? about;
@@ -189,9 +190,11 @@ class ProfileInfoModel extends ChangeNotifier {
   bool forgotPassword = false;
   User? user;
   FileImage? profilePicture;
+  bool didPush = false;
 
   Future<void> updateProfileInfo() async {
     hasProfile = await SharedPreferencesUtil.hasProfile();
+    email = await SharedPreferencesUtil.getEmail();
     firstName = await SharedPreferencesUtil.getFirstName();
     lastName = await SharedPreferencesUtil.getLastName();
     name = '$firstName $lastName';
@@ -205,7 +208,10 @@ class ProfileInfoModel extends ChangeNotifier {
     isLogInUser = await SharedPreferencesUtil.isLogIn();
     notifyListeners();
   }
-
+  void updateDidPush(bool status) {
+    didPush = status;
+    notifyListeners();
+  }
   Future<void> updateHasProfile() async {
     hasProfile = await SharedPreferencesUtil.hasProfile();
     notifyListeners();
