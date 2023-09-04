@@ -87,6 +87,10 @@
       font-size: 0.5em;
       margin-left: 10px;
     }
+    .video-container {
+      display: flex;
+      justify-content: center;
+    }
   </style>
 </head>
 <body>
@@ -114,7 +118,10 @@
 <i class="fas fa-tasks"></i></h2>
     <div class="section-text">
       <p>This is the core of the Collabio platform.</p>
-      <p>Watch this <a class="cta-link" href="javascript:void(0);" onclick="navigateToDemo(0);">demo</a> to see how you can easily get started posting a project.
+      <p>Watch this demo to see how you can easily get started posting a project.</p>
+    </div>
+    <div class="video-container">
+      <iframe id="player1" src = "https://www.youtube.com/embed/C_uGtRiqITA?enablejsapi=1&origin=https://dennis-22-csc.github.io/collabio"  frameborder="0"></iframe>
     </div>
   </div>
   <div>
@@ -123,7 +130,10 @@
 </h2>
     <div class="section-text">
       <p>With search, you can easily find projects that match a particular interest and skill.</p>
-      <p>Here is a <a class="cta-link" href="javascript:void(0);" onclick="navigateToDemo(1);">demo</a>.
+      <p>Here is a demo.</p>
+    </div>
+    <div class="video-container">
+      <iframe  id="player2" src = "https://www.youtube.com/embed/0Yh1q41bJlc?enablejsapi=1&origin=https://dennis-22-csc.github.io/collabio" frameborder="0"></iframe>
     </div>
   </div>
   <div>
@@ -132,7 +142,10 @@
     <div class="section-text">
       <p>The messaging feature enables you to easily message a project poster.</p>
       <p>Its intuitive inbox and chat interface also enables you to further the conversation with them.</p>
-      <p>Watch this <a class="cta-link" href="javascript:void(0);" onclick="navigateToDemo(2);">demo</a> to see this in action.
+      <p>Watch this demo to see this in action.</p>
+    </div>
+    <div class="video-container">
+      <iframe id="player3" src = "https://www.youtube.com/embed/t7VIwmhFgYI?enablejsapi=1&origin=https://dennis-22-csc.github.io/collabio" frameborder="0"></iframe>
     </div>
   </div>
   <div>
@@ -146,22 +159,78 @@
    <div style="text-align: center;">
     <a class="cta-button" href="https://play.google.com/store/apps/details?id=com.denniscode.collabio">GET COLLABIO FOR ANDROID</a>
   </div>
-  <script>
-  	function navigateToDemo(index) {
-  // Create demo object 
-  const demo = [{
-    video_link: "https://www.youtube.com/embed/C_uGtRiqITA"}, {video_link: "https://www.youtube.com/embed/0Yh1q41bJlc"}, {video_link: "https://www.youtube.com/embed/t7VIwmhFgYI" }] 
-    
-  // Convert the demo object to JSON
-  const demoJSON = JSON.stringify(demo[index]);
-
-  // Encode the JSON string as a query parameter
-  const queryParams = new URLSearchParams({ demo: demoJSON }).toString();
-
-  // Navigate to the target page with the query parameters
-  window.open('./demo.html?' + queryParams, '_blank');
-}
-  </script>
 </body>
+    <script>
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var players = [];
+
+        function onYouTubeIframeAPIReady() {
+            // Create and initialize the first player
+           players[0] = new YT.Player('player1', {
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+
+            // Create and initialize the second player
+            players[1] = new YT.Player('player2', {
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+
+            // Create and initialize the third player
+            players[2] = new YT.Player('player3', {
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            
+        }
+        function onPlayerStateChange(event) {
+            if (event.data == YT.PlayerState.PLAYING) {
+               var iframeId = event.target.getIframe().id;
+               switch (iframeId) {
+            	case "player1":
+                 navigateToDemo(0);
+                 break;
+            	case "player2":
+                 navigateToDemo(1)
+                 break;
+            	case "player3":
+                 navigateToDemo(2)
+                 break;
+            	default:
+                 break;
+               }
+            }
+        }
+        
+	function navigateToDemo(index) {
+  		// Create demo object 
+  		const demo = [{
+    		video_link: "https://www.youtube.com/embed/C_uGtRiqITA?autoplay=1&mute=1"}, {video_link: "https://www.youtube.com/embed/0Yh1q41bJlc?autoplay=1&mute=1"}, {video_link: "https://www.youtube.com/embed/t7VIwmhFgYI?autoplay=1&mute=1" }] 
+    
+  		// Convert the demo object to JSON
+  		const demoJSON = JSON.stringify(demo[index]);
+
+  		// Encode the JSON string as a query parameter
+  		const queryParams = new URLSearchParams({ demo: demoJSON }).toString();
+
+  		// Navigate to the target page with the query parameters
+  		window.open('./demo.html?' + queryParams, '_blank');
+	}
+        
+    </script>	
 </html>
 
