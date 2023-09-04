@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:collabio/model.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:collabio/network_handler.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -111,7 +112,7 @@ void _onFocusChange() {
       }
 
     } catch (error) {
-      showStatusDialog("Upload Error", error.toString());
+      showErrorDialog(error.toString());
     }
 
   }
@@ -123,57 +124,33 @@ void _onFocusChange() {
   String lastName = _lastNameController.text.trim();
   String about = _aboutController.text.trim();
   String? email = _email;
-  late String msg;
-  late String title;
 
   if (_profilePicture != null) {
     
       String? imageString = await Util.getImageString(_profilePicture!);
       
-        String result = await Util.saveProfileInformation(
-        firstName: firstName,
-        lastName: lastName,
-        about: about,
-        email: email!,
-        tags: _selectedTags,
-        pictureBytes: imageString,
-        userId: const Uuid().v4(),
-        );
-        if (result == "User inserted successfully.") {
-        try {
-        // Save data to shared preferences after successful remote save
-        Map<String, dynamic> userInfo = {
-          'firstName': firstName,
-          'lastName': lastName,
-          'about': about,
-          'tags': _selectedTags,
-          'email': email,
-          'pictureBytes': imageString,
-        };
-        await SharedPreferencesUtil.setUserInfo(userInfo);
-        await SharedPreferencesUtil.setHasProfile(true);
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
-          profileInfoModel.updateProfileInfo();
-        });
-        msg = "Profile created successfully";
-        title = "Success";
-      } catch (e) {
-        //msg = 'Error $e.toString()';
-        msg = "Can't create profile at the moment";
-        title = "Error";
-      }
-    } else {
-      //msg = "Failed to create profile $result";
-      msg = "Can't create profile at the moment";
-      title = "Error";
-    }
-   
+      Map<String, dynamic> userData = {
+        'first_name': firstName,
+        'last_name': lastName,
+        'email': email,
+        'about': about,
+        'tags': _selectedTags,
+        'picture_bytes': imageString,
+        'user_id': const Uuid().v4(),
+      };
+    
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
+        profileInfoModel.updatePostStatus("Creating profile");
+        profileInfoModel.updatePostColor('black');
+        context.goNamed("projects");
+        sendUserData(profileInfoModel, userData);
+      }); 
+        
   } else {
-    msg = 'Please select and upload a profile picture.';
-    title = "Error";
+    showErrorDialog('Please select and upload a profile picture.');
   }
-  showStatusDialog(title, msg);
+  
   }
 
   @override
@@ -181,7 +158,12 @@ void _onFocusChange() {
     final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final double tagHeight = keyboardHeight + 50;
 
-    return Scaffold(
+    return WillPopScope(
+     onWillPop: () async {
+      context.goNamed("projects");
+      return false;
+     },
+     child: Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         leading: IconButton(
@@ -374,10 +356,11 @@ void _onFocusChange() {
           ),
         ),
       ),
+    ),
     );
   }
 
-  void showStatusDialog(String title, String content){
+  void showErrorDialog(String content){
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -387,11 +370,7 @@ void _onFocusChange() {
           actions: [
             ElevatedButton(
               onPressed: () {
-                if (title == "Success") {
-                  context.goNamed("projects");
-                } else {
-                  context.pop();
-                }
+                context.pop();
               },
               child: const Text('OK'),
             ),

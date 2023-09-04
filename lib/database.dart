@@ -11,6 +11,7 @@ class DatabaseHelper {
   // Table names
   static const String _messagesTable = 'messages';
   static const String _projectsTable = 'projects';
+  static const String _usersTable = 'users';
 
   // Define column names for the projects table
   static const columnProjectId = 'project_id';
@@ -32,7 +33,10 @@ class DatabaseHelper {
   static const columnMessageTimestamp = 'timestamp';
   static const columnMessageStatus = 'status';
 
-  
+  // Define column names for users table 
+  static const columnEmail = 'email';
+  static const columnName = 'name';
+
   factory DatabaseHelper() {
     return _instance;
   }
@@ -48,6 +52,7 @@ class DatabaseHelper {
         // Create tables when the database is created for the first time
         await _createMessagesTable(db);
         await _createProjectsTable(db);
+        await _createUsersTable(db);
       },
     );
   }
@@ -56,6 +61,7 @@ class DatabaseHelper {
     final db = await _database;
     db.delete(_projectsTable);
     db.delete(_messagesTable);
+    db.delete(_usersTable);
   }
 
    // Create the projects table
@@ -90,6 +96,21 @@ class DatabaseHelper {
       ''');
   }
 
+  // Create the users table
+  static Future<void> _createUsersTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $_usersTable (
+        $columnEmail TEXT PRIMARY KEY,
+        $columnName TEXT NOT NULL
+      )
+      ''');
+  }
+
+  // Method to insert user into the users table 
+  static Future<int> insertUser(Map<String, dynamic> user) async {
+    final db = await _database;
+    return await db.insert(_usersTable, user, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
   // Method to insert projects into the projects table
   static Future<void> insertProjects(List<Project> projects) async {
     final database = await _database;
@@ -107,17 +128,27 @@ class DatabaseHelper {
 
   List<String> insertedIds = [];
   for (Message message in messages) {
-    batch.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
+    batch.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
     insertedIds.add(message.id);
+    final sender = <String, dynamic>{
+    'email': message.senderEmail,
+     'name': message.senderName,
+    };
+    final receiver = <String, dynamic>{
+    'email': message.receiverEmail,
+     'name': message.receiverName,
+    };
+    insertUser(sender);
+    insertUser(receiver);
   }
   await batch.commit();
   return insertedIds;
   }
 
 static Future<bool> insertMessage(Map<String, dynamic> jsonData) async {
-  Database db = await _database; 
+  Database db = await _database;
   final Message message = Message.fromMap(jsonData);
-  await db.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
+  await db.insert(_messagesTable, message.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   return true;
 }
 
@@ -149,29 +180,38 @@ static Future<void> insertProject(Map<String, dynamic> jsonData) async {
   await db.insert(_projectsTable, project.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
 }
 
+  static Future<List<Project>> getRecentProjects(int startRange, int endRange) async {
+  Database db = await _database;
+  final List<Map<String, dynamic>> maps = await db.query(
+    _projectsTable,
+    orderBy: "$columnTimestamp DESC",
+  );
 
-  // Function to get the most recent projects (based on timestamp)
-  static Future<List<Project>> getRecentProjects(int limit) async {
-    
-    Database db = await _database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      _projectsTable,
-      orderBy: "$columnTimestamp DESC",
-      limit: limit,
-    );
-    return List.generate(maps.length, (index) => Project(
-      id: maps[index][columnProjectId],
-      title: maps[index][columnTitle],
-      timestamp: maps[index][columnTimestamp],
-      description: maps[index][columnDescription],
-      tags: maps[index][columnTags].split(','), // Convert the comma-separated string back to a list
-      posterName: maps[index][columnPosterName],
-      posterEmail: maps[index][columnPosterEmail],
-      posterAbout: maps[index][columnPosterAbout],
-    ));
-  }
+  // Calculate the actual start and end indices based on the supplied range
+  int startIndex = startRange;
+  int endIndex = endRange;
+  
+  // Ensure that the indices are within the bounds of the result set
+  if (startIndex < 0) startIndex = 0;
+  if (endIndex > maps.length) endIndex = maps.length;
 
-  static Future<List<Project>> getMatchingProjectsAll(List<String> keywords, int numProjectsToReturn) async {
+  // Slice the list to get the desired range of results
+  final List<Map<String, dynamic>> filteredMaps = maps.sublist(startIndex, endIndex);
+
+  return List.generate(filteredMaps.length, (index) => Project(
+    id: filteredMaps[index][columnProjectId],
+    title: filteredMaps[index][columnTitle],
+    timestamp: filteredMaps[index][columnTimestamp],
+    description: filteredMaps[index][columnDescription],
+    tags: filteredMaps[index][columnTags].split(','), // Convert the comma-separated string back to a list
+    posterName: filteredMaps[index][columnPosterName],
+    posterEmail: filteredMaps[index][columnPosterEmail],
+    posterAbout: filteredMaps[index][columnPosterAbout],
+  ));
+}
+
+
+  static Future<List<Project>> getMatchingProjectsAll(List<String> keywords, int startRange, int endRange) async {
     Database db = await _database;
     final List<Map<String, dynamic>> maps = await db.query(_projectsTable);
 
@@ -187,15 +227,56 @@ static Future<void> insertProject(Map<String, dynamic> jsonData) async {
             posterAbout: map[columnPosterAbout],
           ))
       .toList();
-  return Util.getMatchingProjects(keywords, projects, numProjectsToReturn);
+  return Util.getMatchingProjects(keywords, projects, startRange, endRange);
   }
 
-static Future<List<Project>> getMatchingProjectsRecent(List<String> keywords, int numProjectsToReturn) async {
-    List<Project> projects = await getRecentProjects(numProjectsToReturn);
-    return Util.getMatchingProjects(keywords, projects, numProjectsToReturn);
+static Future<List<Project>> getMatchingProjectsRecent(List<String> keywords, int startRange, int endRange) async {
+    List<Project> projects = await getRecentProjectsAll();
+    return Util.getMatchingProjects(keywords, projects, startRange, endRange);
   }
 
+static Future<List<Project>> getMatchingProjectsSearchAll(List<String> keywords, int startRange, int endRange) async {
+    Database db = await _database;
+    final List<Map<String, dynamic>> maps = await db.query(_projectsTable);
 
+    List<Project> projects = maps
+      .map((map) => Project(
+            id: map[columnProjectId],
+            title: map[columnTitle],
+            timestamp: map[columnTimestamp],
+            description: map[columnDescription],
+            tags: map[columnTags].split(','), // Convert the comma-separated string back to a list
+            posterName: map[columnPosterName],
+            posterEmail: map[columnPosterEmail],
+            posterAbout: map[columnPosterAbout],
+          ))
+      .toList();
+  return Util.getMatchingProjectsSearch(keywords, projects, startRange, endRange);
+  }
+
+static Future<List<Project>> getMatchingProjectsSearchRecent(List<String> keywords, int startRange, int endRange) async {
+    List<Project> projects = await getRecentProjectsAll();
+    return Util.getMatchingProjectsSearch(keywords, projects, startRange, endRange);
+  }
+
+static Future<List<Project>> getRecentProjectsAll() async {
+    
+    Database db = await _database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      _projectsTable,
+      orderBy: "$columnTimestamp DESC",
+    );
+    return List.generate(maps.length, (index) => Project(
+      id: maps[index][columnProjectId],
+      title: maps[index][columnTitle],
+      timestamp: maps[index][columnTimestamp],
+      description: maps[index][columnDescription],
+      tags: maps[index][columnTags].split(','), // Convert the comma-separated string back to a list
+      posterName: maps[index][columnPosterName],
+      posterEmail: maps[index][columnPosterEmail],
+      posterAbout: maps[index][columnPosterAbout],
+    ));
+  }
   
   static Future<Map<String, List<Message>>> getGroupedMessages(String currentUserEmail) async {
   final db = await _database;
@@ -267,5 +348,32 @@ static Future<dynamic> getProjectById(String projectId) async {
     return 'Project not found';
   }
 }
+  static Future<String> getUserNamesByEmail(String email) async {
+    final db = await _database;
+    final result = await db.rawQuery(
+      'SELECT $columnName FROM $_usersTable WHERE $columnEmail = ?',
+      [email],
+    );
+    
+    if (result.isNotEmpty) {
+      return result.first[columnName] as String;
+    } else {
+      return 'John Doe';
+    }
+  }
+  static Future<Map<String, String>> getAllUsers() async {
+    final db = await _database;
+    final result = await db.query(_usersTable);
+    
+    final users = <String, String>{};
+
+    for (final row in result) {
+      final email = row[columnEmail] as String;
+      final name = row[columnName] as String;
+      users[email] = name;
+    }
+
+    return users;
+  }
 
 }

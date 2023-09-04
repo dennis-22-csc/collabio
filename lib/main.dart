@@ -34,6 +34,7 @@ void main() async {
   late bool isLoginUser;
 
   WidgetsFlutterBinding.ensureInitialized();
+  
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
             statusBarColor: Color(0xFFEBDDFF),
   ));
@@ -77,7 +78,6 @@ void main() async {
     ),
   );
 }
-
 
 class MyApp extends StatefulWidget {
   final bool hasInternet; 
@@ -171,7 +171,7 @@ Future<void> getProfileInfo() async {
         List<String> tags = (await SharedPreferencesUtil.getTags());
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
-          projectsModel.updateProjects(tags, 10);
+          projectsModel.updateProjects(tags, 0, 10);
         });
         
       } else {
@@ -193,17 +193,21 @@ Future<void> getProfileInfo() async {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
         //Get initial messages from local database
         final messagesModel = Provider.of<MessagesModel>(context, listen: false);
+        final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
+       
         messagesModel.updateGroupedMessages(widget.email!);
+        profileInfoModel.updateUsers();
 
         //Set up web socket for new messages
-        await connectToSocket(messagesModel, widget.email!);
+        await connectToSocket(profileInfoModel, messagesModel, widget.email!);
 
         // Resend unsent messages
         final messages = await DatabaseHelper.getUnsentMessages();
         if (messages.isNotEmpty) {
           for (var message in messages) {
-            await sendMessageData(messagesModel, message, widget.email!);
+            await sendMessageData(profileInfoModel, messagesModel, message, widget.email!);
           }
+          profileInfoModel.updateSilentSend(true);
         }
         });
       }

@@ -52,7 +52,13 @@ class _WebViewContainerState extends State<WebViewContainer> {
   Widget build(BuildContext context) {
     final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
     
-    return Scaffold(
+    return WillPopScope(
+     onWillPop: () async {
+      context.goNamed("projects");
+      if(!profileInfoModel.didPush) profileInfoModel.updateDidPush(true);
+      return false;
+     },
+     child: Scaffold(
       backgroundColor: const Color(0xFFEBDDFF),
       appBar: AppBar(
         leading: IconButton(
@@ -81,6 +87,7 @@ class _WebViewContainerState extends State<WebViewContainer> {
               ),
           ],
         ),
+     ),
     );
   }
 

@@ -85,7 +85,6 @@ void _onFocusChange() {
       String projectTitle = _projectTitleController.text;
       String projectDescription = _projectDescriptionController.text;
       DateTime currentTime = DateTime.now();
-      String? result;
 
       // Prepare the data to be sent to the remote URL
       Map<String, dynamic> projectData = {
@@ -97,14 +96,13 @@ void _onFocusChange() {
         'poster_email': _email,
         'poster_about': _about,
       };
-
-        // Send project
-        result = await sendProjectData(projectData);
-        if (result.startsWith('Project inserted successfully.')) {
-          showStatusDialog("Project posted");
-        } else {
-          showStatusDialog("Can't post projects at the moment");
-        }
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
+        profileInfoModel.updatePostStatus("Posting project");
+        profileInfoModel.updatePostColor('black');
+        context.goNamed("projects");
+        sendProjectData(profileInfoModel, projectData);
+      });
   }
 
 @override
@@ -124,7 +122,13 @@ void _onFocusChange() {
     final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final double tagHeight = keyboardHeight + 50;
 
-    return Scaffold(
+    return WillPopScope(
+     onWillPop: () async {
+      context.goNamed("projects");
+      if(!profileInfoModel.didPush) profileInfoModel.updateDidPush(true);
+      return false;
+     },
+     child: Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         leading: IconButton(
@@ -269,26 +273,8 @@ void _onFocusChange() {
           ),
         ),
       ),
+    ),
     );
   }
 
-  void showStatusDialog(String content){
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Hi there'),
-          content: Text(content),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                context.goNamed("projects");
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }

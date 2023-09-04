@@ -2,7 +2,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'package:collabio/network_handler.dart';
 import 'package:collabio/model.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -10,6 +9,7 @@ import 'package:collabio/firebase_options.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'dart:math';
 
 class Util {
   
@@ -69,8 +69,11 @@ class Util {
   }
 
   static String formatTime(BuildContext context, String timestamp) {
+    final preciseTimestamp = int.parse(timestamp);
+    final formatTimeStamp = DateTime.fromMicrosecondsSinceEpoch(preciseTimestamp).toString();
+  
     final bool is24HoursFormat = MediaQuery.of(context).alwaysUse24HourFormat;
-    final DateTime time = DateTime.parse(timestamp);
+    final DateTime time = DateTime.parse(formatTimeStamp);
     final DateFormat formatter = DateFormat(is24HoursFormat ? 'HH:mm' : 'h:mm a');
 
 
@@ -104,29 +107,6 @@ static Map<String, dynamic> convertJsonToUserInfo(Map<String, dynamic> jsonData)
   };
 }
 
-static Future<String> saveProfileInformation({
-    required String firstName,
-    required String lastName,
-    required String about,
-    required String email,
-    required List<String> tags,
-    required String pictureBytes,
-    required String userId,
-  }) async {
-    Map<String, dynamic> userData = {
-        'first_name': firstName,
-        'last_name': lastName,
-        'email': email,
-        'about': about,
-        'tags': tags,
-        'picture_bytes': pictureBytes,
-        'user_id': userId,
-      };
-    
-    String result = await sendUserData(userData);
-    return result;
-  }
-
   static bool areEquivalentStrings(String str1, String str2) {
   List<String> words1 = str1.split(' ');
   List<String> words2 = str2.split(' ');
@@ -137,7 +117,7 @@ static Future<String> saveProfileInformation({
   return words1.join(' ') == words2.join(' ');
 }
 
-  static List<Project> getMatchingProjects(List<String> keywords, List<Project> projects, int numProjectsToReturn) {
+  static List<Project> getMatchingProjects(List<String> keywords, List<Project> projects, int startRange, int endRange) {
   // Calculate match percentage for each project based on skills in description and tags
   for (Project project in projects) {
     int matchingTagCount = 0;
@@ -175,10 +155,86 @@ static Future<String> saveProfileInformation({
   // Sort projects based on match percentage (higher to lower)
   matchingProjects.sort((a, b) => b.matchPercentage.compareTo(a.matchPercentage));
 
-  // Return the top numProjectsToReturn matching projects
-  return matchingProjects.take(numProjectsToReturn).toList();
+  int totalProjects = matchingProjects.length;
+  int adjustedStartRange = min(startRange, totalProjects);
+  int adjustedEndRange = min(endRange, totalProjects);
+  // Return matching projects within the specified range
+  return matchingProjects.sublist(adjustedStartRange, adjustedEndRange);
+
+  }
+
+  static List<Project> getMatchingProjectsSearch(List<String> keywords, List<Project> projects, int startRange, int endRange) {
+  // Create an empty list to store the filtered projects
+  List<Project> filteredMatchingProjects = [];
+
+  // Create a set to keep track of projects that match all keywords
+  Set<Project> projectsMatchingAllKeywords = Set.from(projects);
+
+  // Create a list to store the keywords used for filtering
+  List<String> usedKeywords = [];
+
+  // Create a map of tag patterns
+  Map<String, List<String>> tagPatterns = {
+    "web development": ["web", "web development", "web design", "website development", "website design", "web app", "web application development"],
+    "web design": ["web", "web development", "web design", "website development", "website design", "web app", "web application development"],
+    "web": ["web", "web development", "web design", "website development", "website design", "web app", "web application development"],
+    "website development": ["web", "web development", "web design", "website development", "website design", "web app", "web application development"],
+    "website design": ["web", "web development", "web design", "website development", "website design", "web app", "web application development"],
+    "web app": ["web", "web development", "web design", "website development", "website design", "web app", "web application development"],
+    "web application development": ["web", "web development", "web design", "website development", "website design", "web app", "web application development"],
+    "android development": ["android development", "android app development", "android application development", "android"],
+    "android app development": ["android development", "android app development", "android application development", "android"],
+    "android application development": ["android development", "android app development", "android application development", "android"],
+    "android": ["android development", "android app development", "android application development", "android"],
+    "ios": ["ios development", "ios app development", "ios application development", "ios"],
+    "ios application development": ["ios development", "ios app development", "ios application development", "ios"],
+    "ios app development": ["ios development", "ios app development", "ios application development", "ios"],
+    "ios development": ["ios development", "ios app development", "ios application development", "ios"],
+  };
+
+  keywords = keywords.map((keyword) => keyword.toLowerCase()).toList();
+
+  // Iterate through the keywords
+  for (String keyword in keywords) {
+    if (tagPatterns.containsKey(keyword)) {
+      usedKeywords.add(keyword);
+      List<Project> matchingProjects = projects.where((project) =>
+          tagPatterns[keyword]!.any((tag) =>
+              project.tags.any((t) => t.toLowerCase() == tag.toLowerCase()))).toList();
+
+      // Update the set of projects that match all keywords
+      projectsMatchingAllKeywords = projectsMatchingAllKeywords.intersection(Set.from(matchingProjects));
+    }
+  }
+
+  // Convert the set of matching projects back to a list
+  filteredMatchingProjects = projectsMatchingAllKeywords.toList();
+
+  List<String> otherKeywords = keywords.where((keyword) => !usedKeywords.contains(keyword)).toList();
+
+  if (otherKeywords.isNotEmpty) {
+    filteredMatchingProjects = filterProjectsByKeywords(filteredMatchingProjects, otherKeywords);
+  }
+
+  int totalProjects = filteredMatchingProjects.length;
+  int adjustedStartRange = min(startRange, totalProjects);
+  int adjustedEndRange = min(endRange, totalProjects);
+  // Return matching projects within the specified range
+  return filteredMatchingProjects.sublist(adjustedStartRange, adjustedEndRange);
 }
 
+static List<Project> filterProjectsByKeywords(List<Project> projects, List<String> keywords) {
+  List<Project> filteredProjects = [];
+
+  for (var project in projects) {
+    List<String> projectTags = project.tags.map((tag) => tag.toLowerCase()).toList();
+    if (keywords.every((keyword) => projectTags.contains(keyword.toLowerCase()))) {
+      filteredProjects.add(project);
+    }
+  }
+
+  return filteredProjects;
+}
 
   static String timeToString(String timestamp) {
   DateTime now = DateTime.now();
@@ -218,7 +274,7 @@ static List<String> getOldestMessageIdsGroupedBy24Hours(List<Message> messages) 
     if (currentGroup.isEmpty) {
       currentGroup.add(sortedMessages[i]);
     } else {
-      if (DateTime.parse(sortedMessages[i].timestamp).difference(DateTime.parse(currentGroup.last.timestamp)).inHours <= 24) {
+      if (DateTime.parse(toTimeString(sortedMessages[i].timestamp)).difference(DateTime.parse(toTimeString(currentGroup.last.timestamp))).inHours <= 24) {
         currentGroup.add(sortedMessages[i]);
       } else {
         oldestMessageIds.add(currentGroup.first.id);
@@ -232,6 +288,11 @@ static List<String> getOldestMessageIdsGroupedBy24Hours(List<Message> messages) 
   }
 
   return oldestMessageIds;
+}
+
+static String toTimeString(String timestamp) {
+  final preciseTimestamp = int.parse(timestamp);
+  return DateTime.fromMicrosecondsSinceEpoch(preciseTimestamp).toString();
 }
 
 }

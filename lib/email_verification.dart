@@ -53,7 +53,12 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-            child: Scaffold(
+            child: WillPopScope(
+              onWillPop: () async {
+                context.pop();
+              return false;
+              },
+              child: Scaffold(
               body: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -106,7 +111,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 ),
               ),
             ),
-          );
+          ),
+    );
   }
 
   void showStatusDialog(User? currentUser, String content){

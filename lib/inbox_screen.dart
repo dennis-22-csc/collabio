@@ -16,7 +16,7 @@ class InboxScreen extends StatefulWidget {
 }
 
 class _InboxScreenState extends State<InboxScreen> {
-  
+
   @override
   void initState() {
     super.initState();
@@ -29,13 +29,21 @@ class _InboxScreenState extends State<InboxScreen> {
 
  @override
 Widget build(BuildContext context) {
-   final  profileInfoModel = Provider.of<ProfileInfoModel>(context);
-    
-  return Scaffold(
+  final profileInfoModel = Provider.of<ProfileInfoModel>(context);
+           
+  return WillPopScope(
+     onWillPop: () async {
+      profileInfoModel.updatePostStatus('');
+      context.goNamed("projects");
+      if(!profileInfoModel.didPush) profileInfoModel.updateDidPush(true);
+      return false;
+     },
+     child: Scaffold(
     appBar: AppBar(
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: () {
+          profileInfoModel.updatePostStatus('');
           context.goNamed("projects");
           if(!profileInfoModel.didPush) profileInfoModel.updateDidPush(true);
         },
@@ -72,18 +80,17 @@ Widget build(BuildContext context) {
               final groupKey = sortedKeys[index];
               final messagesForGroup = messages[groupKey]!;
               final mostRecentMessage = messagesForGroup.first;
-              String currentUserName = widget.currentUserName.trim();
-              final otherPartyName = getOtherPartyName(mostRecentMessage, currentUserName); // Replace with your logic
               return _buildConversationCard(
                 mostRecentMessage: mostRecentMessage,
-                otherPartyName: otherPartyName,
+                otherPartyName: profileInfoModel.users?[groupKey],
                 groupKey: groupKey,
               );
             },
           );
         }
-      },
+      }
     ),
+  ),
   );
 }
 
@@ -139,7 +146,8 @@ Widget build(BuildContext context) {
 }
 
 Widget _buildTimestamp(String timestamp) {
-  final DateTime messageTime = DateTime.parse(timestamp);
+  final preciseTimestamp = int.parse(timestamp);
+  final messageTime = DateTime.fromMicrosecondsSinceEpoch(preciseTimestamp);
   final DateTime now = DateTime.now();
   final DateTime today = DateTime(now.year, now.month, now.day);
   final DateTime yesterday = today.subtract(const Duration(days: 1));
@@ -200,22 +208,5 @@ Widget buildMessageStatusIcon(Message message) {
       return const SizedBox.shrink();
   }
 }
-
-String getOtherPartyName(Message message, String currentUserName) {
-  final senderName = message.senderName.trim();
-  final receiverName = message.receiverName.trim();
-
-  if (Util.areEquivalentStrings(senderName, currentUserName)) {
-    // If the current user is the sender, the other party is the receiver
-    return receiverName;
-  } else if (Util.areEquivalentStrings(receiverName, currentUserName)) {
-    // If the current user is the receiver, the other party is the sender
-    return senderName;
-  } else {
-    // If neither sender nor receiver is the current user, return "John Doe"
-    return "John Doe";
-  }
-}
-
 
 }

@@ -199,7 +199,13 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
 
     return Consumer<ProfileInfoModel>(
         builder: (context, profileInfoModel, _) {
-            return Scaffold(
+            return WillPopScope(
+              onWillPop: () async {
+              context.goNamed("projects");
+              if(!profileInfoModel.didPush) profileInfoModel.updateDidPush(true);
+              return false;
+              },
+              child: Scaffold(
                 appBar: AppBar(
                   leading: IconButton(
                     icon: const Icon(Icons.arrow_back),
@@ -238,6 +244,7 @@ class _ProfileSectionScreenState extends State<ProfileSectionScreen> {
                     return ProfileSectionView(key: UniqueKey(), section: sections[index - 1]);
                   },
                 ),
+              ),
               );
             },
         );

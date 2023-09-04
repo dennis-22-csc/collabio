@@ -40,9 +40,15 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+     onWillPop: () async {
+      context.pop();
+      return false;
+     },
+     child: Scaffold(
       appBar: AppBar(
         title: const Text('Password Reset'),
+        automaticallyImplyLeading: false,
       ),
       body: Container(
         padding: const EdgeInsets.all(16.0),
@@ -77,6 +83,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 

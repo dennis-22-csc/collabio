@@ -128,7 +128,9 @@ Future<dynamic> fetchMessagesFromApi(String email) async {
           dynamic jsonData = responseData['messages'];
           
           for (var item in jsonData) {
-            item["status"] = "received";
+            if (item['receiver_email'] == email) {
+              item['status'] = "received";
+            }
           }
     
           return jsonData.map<Message>((item) {
@@ -200,7 +202,7 @@ Future<String> deleteMessages(List<String> messageIds) async {
   return msg;
 }
 
-Future<String> sendProjectData(Map<String, dynamic> projectData) async {
+Future<void> sendProjectData(ProfileInfoModel profileInfoModel, Map<String, dynamic> projectData) async {
   late String msg;
   String url = 'https://collabio.denniscode.tech/project';
 
@@ -216,7 +218,7 @@ Future<String> sendProjectData(Map<String, dynamic> projectData) async {
       final responseBody = response.body;
 
       if (contentType?.contains('application/json') == true) {
-        return jsonDecode(responseBody);
+        msg = jsonDecode(responseBody);
       } else {
         msg = responseBody;
       }
@@ -227,10 +229,17 @@ Future<String> sendProjectData(Map<String, dynamic> projectData) async {
   } catch (error) {
     msg = 'Error Project. $error';
   }
-  return msg;
+  
+  if (msg.startsWith('Project inserted successfully.')) {
+    profileInfoModel.updatePostStatus("Project posted");
+    profileInfoModel.updatePostColor('purple');
+  } else {
+    profileInfoModel.updatePostStatus("Can't post projects at the moment");
+    profileInfoModel.updatePostColor('red');
+  }
 }
 
-Future<String> sendMessageData(MessagesModel messagesModel, Map<String, dynamic> messageData, String currentUserEmail) async {
+Future<void> sendMessageData(ProfileInfoModel profileInfoModel, MessagesModel messagesModel, Map<String, dynamic> messageData, String currentUserEmail) async {
   late String msg;
   String url = 'https://collabio.denniscode.tech/message';
 
@@ -257,7 +266,7 @@ Future<String> sendMessageData(MessagesModel messagesModel, Map<String, dynamic>
         if (responseData == "Message inserted successfully.") {
           await DatabaseHelper.updateMessageStatus(messageData["message_id"], "sent");
           messagesModel.updateGroupedMessages(currentUserEmail);
-          return "Message inserted successfully.";
+          msg = "Message inserted successfully";
         } else {
           msg = 'Send Message Internal $responseData';
         }
@@ -272,13 +281,19 @@ Future<String> sendMessageData(MessagesModel messagesModel, Map<String, dynamic>
   } catch (error) {
     msg = 'Send Message External. $error';
   }
-
-  await DatabaseHelper.updateMessageStatus(messageData["message_id"], "failed");
-  messagesModel.updateGroupedMessages(currentUserEmail);  
-  return msg;
+ 
+  if (msg == 'Message inserted successfully') {
+    profileInfoModel.updatePostStatus("Message sent. Check your inbox.");
+    profileInfoModel.updatePostColor('purple');
+  } else {
+    await DatabaseHelper.updateMessageStatus(messageData["message_id"], "failed");
+    messagesModel.updateGroupedMessages(currentUserEmail);
+    profileInfoModel.updatePostStatus("Couldn't send the message. Check your inbox.");
+    profileInfoModel.updatePostColor('red');
+  }
 }
 
-Future<String> sendUserData(Map<String, dynamic> userData) async {
+Future<void> sendUserData(ProfileInfoModel profileInfoModel, Map<String, dynamic> userData) async {
   late String msg;
   String url = 'https://collabio.denniscode.tech/create-user';
 
@@ -305,7 +320,34 @@ Future<String> sendUserData(Map<String, dynamic> userData) async {
   } catch (error) {
     msg = 'Error saving user data: $error';
   }
-  return msg;
+  
+  if (msg == "User inserted successfully.") {
+        try {
+        // Save data to shared preferences after successful remote save
+        Map<String, dynamic> userInfo = {
+          'firstName': userData['first_name'],
+          'lastName': userData['last_name'],
+          'about': userData['about'],
+          'tags': userData['tags'],
+          'email': userData['email'],
+          'pictureBytes': userData['picture_bytes'],
+        };
+        await SharedPreferencesUtil.setUserInfo(userInfo);
+        await SharedPreferencesUtil.setHasProfile(true);
+        
+        profileInfoModel.updatePostStatus("Profile created successfully");
+        profileInfoModel.updatePostColor('purple');
+        profileInfoModel.updateProfileInfo();
+      } catch (e) {
+        //msg = 'Error $e.toString()';
+        profileInfoModel.updatePostStatus("Can't create profile at the moment");
+        profileInfoModel.updatePostColor('red');
+      }
+  } else {
+    profileInfoModel.updatePostStatus("Can't create profile at the moment");
+    profileInfoModel.updatePostColor('red');
+  }
+   
 }
 
 Future<String> updateProfileSection(String email, String title, dynamic content) async {
@@ -400,7 +442,7 @@ Future<String> updateTokenSection(String email, String token) async {
   return msg;
 }
 
-Future<String> connectToSocket(MessagesModel messagesModel, String currentUserEmail) async {
+Future<String> connectToSocket(ProfileInfoModel profileInfoModel, MessagesModel messagesModel, String currentUserEmail) async {
     late String msg;
     IO.Socket? socket;
     Set<String> receivedMessageIds = {};
@@ -418,6 +460,17 @@ Future<String> connectToSocket(MessagesModel messagesModel, String currentUserEm
         final messageId = message['message_id'];
         if (!receivedMessageIds.contains(messageId)) {
           DatabaseHelper.insertMessage(message);
+          final sender = <String, dynamic>{
+          'email': message['sender_email'],
+          'name': message['sender_name'],
+          };
+          final receiver = <String, dynamic>{
+          'email': message['receiver_email'],
+          'name': message['receiver_name'],
+          };
+          DatabaseHelper.insertUser(sender);
+          DatabaseHelper.insertUser(receiver);
+          profileInfoModel.updateUsers();
           messagesModel.updateGroupedMessages(currentUserEmail);
           receivedMessageIds.add(messageId);
         }

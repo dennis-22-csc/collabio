@@ -80,6 +80,14 @@ class Project {
   );
 }
 
+@override
+  bool operator ==(other) {
+    return (other is Project) && (other.id == id);
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+  
 }
 
 class Message {
@@ -157,22 +165,31 @@ class MessagesModel extends ChangeNotifier {
 }
 
 class ProjectsModel extends ChangeNotifier {
-  List<Project> recentProjects = [];
-  List<Project> matchingProjects = [];
-
-  Future<void> updateProjects(List<String> keywords, int limit) async {
-    recentProjects = await DatabaseHelper.getRecentProjects(limit);
-    matchingProjects = await DatabaseHelper.getMatchingProjectsAll(keywords, limit);
-    notifyListeners();
-  }
-
-  Future<void> updateProjectsForSearch(List<String> keywords, int limit) async {
-    recentProjects = await DatabaseHelper.getMatchingProjectsRecent(keywords, limit);
-    matchingProjects = await DatabaseHelper.getMatchingProjectsAll(keywords, limit);
-    notifyListeners();
-  }
-
+  Set<Project> recentProjects = {};
+  Set<Project> matchingProjects = {};
   
+  Future<void> updateProjects(List<String> keywords, int startRange, int endRange) async {
+    List<Project> newRecentProjects = await DatabaseHelper.getRecentProjects(startRange, endRange);
+    List<Project> newMatchingProjects = await DatabaseHelper.getMatchingProjectsAll(keywords, startRange, endRange);
+    matchingProjects.addAll(newMatchingProjects);
+    recentProjects.addAll(newRecentProjects);
+    
+    notifyListeners();
+  }
+
+  Future<void> updateProjectsForSearch(List<String> keywords, int startRange, int endRange) async {
+    List<Project> newRecentProjects = await DatabaseHelper.getMatchingProjectsSearchRecent(keywords, startRange, endRange);
+    List<Project> newMatchingProjects = await DatabaseHelper.getMatchingProjectsSearchAll(keywords, startRange, endRange);
+    recentProjects.addAll(newRecentProjects);
+    matchingProjects.addAll(newMatchingProjects);
+    notifyListeners();
+  }
+  void clearProjects() {
+    recentProjects.clear();
+    matchingProjects.clear();
+  }
+    
+
 }
 
 class ProfileInfoModel extends ChangeNotifier {
@@ -189,6 +206,14 @@ class ProfileInfoModel extends ChangeNotifier {
   bool isLogInUser = false;
   bool didPush = false;
   MemoryImage? profilePicture;
+  String postStatus = '';
+  String postColor = '';
+  bool didSearch = false;
+  List<String> searchKeywords = [];
+  int projectLowerBound = 0;
+  int projectUpperBound = 10;
+  bool silentSend = false;
+  Map<String, String>? users;
 
   Future<void> updateProfileInfo() async {
     hasProfile = await SharedPreferencesUtil.hasProfile();
@@ -205,9 +230,38 @@ class ProfileInfoModel extends ChangeNotifier {
     myToken = await SharedPreferencesUtil.getToken();
     isLogOutUser = await SharedPreferencesUtil.isLogOut();
     isLogInUser = await SharedPreferencesUtil.isLogIn();
+    users = await DatabaseHelper.getAllUsers();
     notifyListeners();
   }
   
+
+  void updateProjectBounds() {
+    projectLowerBound = projectLowerBound + 10;
+    projectUpperBound = projectUpperBound + 10;
+    notifyListeners();
+  }
+
+  void resetProjectBounds() {
+    projectLowerBound = 0;
+    projectUpperBound = 9;
+    notifyListeners();
+  }
+
+  void updateSearchKeywords(List<String> keywords) {
+    searchKeywords = keywords;
+    notifyListeners();
+  } 
+
+  void updatePostStatus(String status) {
+    postStatus = status;
+    notifyListeners();
+  }
+
+  void updatePostColor(String color) {
+    postColor = color;
+    notifyListeners();
+  }
+
   Future<void> updateHasProfile() async {
     hasProfile = await SharedPreferencesUtil.hasProfile();
     notifyListeners();
@@ -259,6 +313,18 @@ class ProfileInfoModel extends ChangeNotifier {
   }
   void updateDidPush(bool status) {
     didPush = status;
+    notifyListeners();
+  }
+  void updateDidSearch(bool status) {
+    didSearch = status;
+    notifyListeners();
+  }
+  void updateSilentSend(bool status) {
+    silentSend = status;
+    notifyListeners();
+  }
+  Future<void> updateUsers() async {
+    users = await DatabaseHelper.getAllUsers();
     notifyListeners();
   }
 }

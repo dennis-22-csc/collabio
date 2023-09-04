@@ -5,6 +5,8 @@ import 'package:collabio/util.dart';
 import 'package:provider/provider.dart';
 import 'package:collabio/model.dart';
 import 'package:go_router/go_router.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:marquee/marquee.dart';
 
 class MyProjectPage extends StatefulWidget {
   
@@ -24,25 +26,25 @@ class _MyProjectPageState extends State<MyProjectPage> {
   String? _email;
   User? user;
   late ProfileInfoModel profileInfoModel;
-  
+  late ProjectsModel projectsModel;
+
   @override
   void initState() {
     super.initState();
-    
     user = FirebaseAuth.instance.currentUser!; 
-    _email = user?.email;
-    }
+     _email = user?.email;
+  }
 
-  
   void handleSearch() {
     String searchText = _searchController.text;
     List<String> keywords = searchText.split(',');
     // Remove leading and trailing whitespaces from each keyword
     keywords = keywords.map((keyword) => keyword.trim()).toList();
-
-    final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
-    projectsModel.updateProjectsForSearch(keywords, 10);
-
+    projectsModel.clearProjects();
+    projectsModel.updateProjectsForSearch(keywords, 0, 10);
+    profileInfoModel.updateSearchKeywords(keywords);
+    profileInfoModel.updateDidSearch(true);
+    profileInfoModel.resetProjectBounds();
     // Unfocus the text field to dismiss the keyboard after search
     _searchFocusNode.unfocus();
   
@@ -60,6 +62,8 @@ class _MyProjectPageState extends State<MyProjectPage> {
   @override
   Widget build(BuildContext context) {
    profileInfoModel = Provider.of<ProfileInfoModel>(context);
+   projectsModel = Provider.of<ProjectsModel>(context);
+    
   List<Widget> drawerOptions = [
   if (profileInfoModel.hasProfile)
     UserAccountsDrawerHeader(
@@ -77,21 +81,21 @@ class _MyProjectPageState extends State<MyProjectPage> {
     ListTile(
       title: const Text('View Profile'),
       onTap: () {
-        context.pushNamed("view-profile");
+        context.goNamed("view-profile");
       },
     )
   else
     ListTile(
       title: const Text('Create Profile'),
       onTap: () {
-        context.pushNamed("create-profile");
+        context.goNamed("create-profile");
       },
     ),
     ListTile(
       title: const Text('Post Project'),
       onTap: () {
         if (profileInfoModel.hasProfile) {
-          context.pushNamed("post-project");
+          context.goNamed("post-project");
         } else {
           showProfileDialog("You can't post a project without creating a profile.");        
         }
@@ -110,7 +114,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
   ListTile(
     title: const Text('Delete Account'),
     onTap: () {
-      context.pushNamed("web-view", pathParameters: {'url': "https://collabio.denniscode.tech/del-account"});
+      context.goNamed("web-view", pathParameters: {'url': "https://collabio.denniscode.tech/del-account"});
     },
   ),
 ];
@@ -118,7 +122,12 @@ class _MyProjectPageState extends State<MyProjectPage> {
   builder: (context, profileInfoModel, _) {
     return DefaultTabController(
       length: 2,
-      child: Scaffold(
+      child: WillPopScope(
+        onWillPop: () async {
+        context.pop();
+        return false;
+        },
+      child:  Scaffold(
         key: scaffoldKey,
         appBar: AppBar(
           title: Row(
@@ -128,17 +137,65 @@ class _MyProjectPageState extends State<MyProjectPage> {
                 onTap: () {
                   scaffoldKey.currentState!.openDrawer();
                 },
-                child: CircleAvatar(
-                  radius: 20,
-                  backgroundImage: profileInfoModel.profilePicture == null ?  null : profileInfoModel.profilePicture!,
-                  child: profileInfoModel.profilePicture == null ? const Icon(Icons.person) : null,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    if (profileInfoModel.hasProfile)
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundImage: profileInfoModel.profilePicture!,
+                      ),
+                    if (!profileInfoModel.hasProfile)
+                      const CircleAvatar(
+                        radius: 20,
+                        child: Icon(Icons.person),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8.0),
-              const Expanded(
-                child: Text(
-                  'Projects',
-                  textAlign: TextAlign.center,
+              Expanded(
+                child: Builder(
+                  builder: (BuildContext context) {
+                    if (profileInfoModel.postStatus.isEmpty || profileInfoModel.silentSend) {
+                      return const Text(
+                        'Projects',
+                        textAlign: TextAlign.center,
+                      );
+                    } else {
+                      return Row(
+                        children: [
+                          Expanded (
+                            flex: 1,
+                            child: AutoSizeText (
+                              profileInfoModel.postStatus,
+                              maxLines: 1,
+                              overflowReplacement: SizedBox (
+                                width: 180,
+                                height: 30,
+                                child: Marquee (
+                                  scrollAxis: Axis.horizontal,
+                                  blankSpace: 10.0,
+                                  startPadding: 10.0,
+                                  velocity: 25,
+                                  text: profileInfoModel.postStatus, 
+                                  style: TextStyle(color: buildPostColor(profileInfoModel),),
+                                ),
+                              ),
+                              style: TextStyle(color: buildPostColor(profileInfoModel),),
+                            )
+                          ),
+                          Flexible(
+                            flex: 0,
+                            child: IconButton(
+                            onPressed: () {
+                              profileInfoModel.updatePostStatus('');                            },
+                            icon: const Icon(Icons.cancel),
+                          )),
+                        ],
+                      );
+                    }
+                  },
                 ),
               ),
             ],
@@ -153,8 +210,10 @@ class _MyProjectPageState extends State<MyProjectPage> {
                   items: _buildOptionsMenu(context),
                 ).then((value) {
                   if (value != null && value == 'refresh') {
-                    final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
-                    projectsModel.updateProjects(profileInfoModel.tags!, 10);
+                    projectsModel.clearProjects();
+                    projectsModel.updateProjects(profileInfoModel.tags!, 0, 10);
+                    profileInfoModel.updateDidSearch(false);
+                    profileInfoModel.resetProjectBounds();
                     _searchController.clear();
                   }
                 });
@@ -183,10 +242,10 @@ class _MyProjectPageState extends State<MyProjectPage> {
               ),
               child: FractionallySizedBox(
                 widthFactor: 0.75,
-                child: TextField(
+                child: TextFormField(
                   controller: _searchController,
                   focusNode: _searchFocusNode,
-                  onSubmitted: (_) {
+                  onFieldSubmitted: (_) {
                     if (_searchController.text.trim().isNotEmpty) {
                       handleSearch();
                     }
@@ -256,6 +315,7 @@ class _MyProjectPageState extends State<MyProjectPage> {
           ],
         ),
       ),
+      ),
     );
   },
   );
@@ -308,5 +368,29 @@ class _MyProjectPageState extends State<MyProjectPage> {
       ),
     ];
   }
+
+  MaterialColor buildPostColor(ProfileInfoModel profileInfoModel) {
+  switch (profileInfoModel.postColor) {
+    case 'purple':
+     return Colors.purple;  
+    case 'red':
+     return Colors.red;
+    case 'black':
+     return MaterialColor(0xFF000000, {
+        50: Colors.black.withOpacity(0.1),
+        100: Colors.black.withOpacity(0.2),
+        200: Colors.black.withOpacity(0.3),
+        300: Colors.black.withOpacity(0.4),
+        400: Colors.black.withOpacity(0.5),
+        500: Colors.black.withOpacity(0.6),
+        600: Colors.black.withOpacity(0.7),
+        700: Colors.black.withOpacity(0.8),
+        800: Colors.black.withOpacity(0.9),
+        900: Colors.black.withOpacity(1.0),
+      });
+    default:
+      return Colors.red;
+  }
+}
 
 }

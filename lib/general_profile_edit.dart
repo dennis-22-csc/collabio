@@ -40,7 +40,12 @@ class _ProfileEditDialogState extends State<ProfileEditDialog> {
   
   @override
   Widget build(BuildContext context) {
-    return  Scaffold(
+    return  WillPopScope(
+        onWillPop: () async {
+          context.pop();
+        return false;
+        },
+     child: Scaffold(
           appBar: AppBar(
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
@@ -85,7 +90,8 @@ class _ProfileEditDialogState extends State<ProfileEditDialog> {
             ],
           ),
           ),
-        ); 
+        ),
+    ); 
     
   }
 

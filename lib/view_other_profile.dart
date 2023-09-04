@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:collabio/model.dart';
 import 'package:collabio/util.dart';
+import 'package:collabio/database.dart';
 import 'dart:typed_data';
 
 class ViewOtherProfileScreen extends StatefulWidget {
@@ -50,7 +51,13 @@ class _ViewOtherProfileScreenState extends State<ViewOtherProfileScreen> {
     _hasProfile = profileInfoModel.hasProfile; 
     _name = profileInfoModel.name;
 
-    return Scaffold(
+    return WillPopScope(
+     onWillPop: () async {
+      context.goNamed("projects");
+      if(!profileInfoModel.didPush) profileInfoModel.updateDidPush(true);
+      return false;
+     },
+     child: Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -188,6 +195,7 @@ class _ViewOtherProfileScreenState extends State<ViewOtherProfileScreen> {
             );
           },
       ),
+     ),
     );
   }
 
@@ -204,16 +212,25 @@ class _ViewOtherProfileScreenState extends State<ViewOtherProfileScreen> {
         .format(DateTime.now()),
       "status": "pending",
     };
-    
+    final sender = <String, dynamic>{
+    'email': message['sender_email'],
+     'name': message['sender_name'],
+    };
+    final receiver = <String, dynamic>{
+    'email': message['receiver_email'],
+     'name': message['receiver_name'],
+    };
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-    final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-    final result = await sendMessageData(messagesModel, message, email!);
-
-    if (result == "Message inserted successfully.") {
-      showStatusDialog("Message sent.");
-    } else {
-      showStatusDialog("Message not sent, will be sent when the server is reachable.");
-    }
+      final messagesModel = Provider.of<MessagesModel>(context, listen: false);
+      final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
+      profileInfoModel.updatePostStatus("Sending Message");
+      profileInfoModel.updatePostColor('black');
+      profileInfoModel.updateSilentSend(false);
+      context.goNamed("projects");
+      sendMessageData(profileInfoModel, messagesModel, message, email!);
+      DatabaseHelper.insertUser(sender);
+      DatabaseHelper.insertUser(receiver);
+      profileInfoModel.updateUsers();
     });
    _messageController.clear();
   }
@@ -227,7 +244,12 @@ class _ViewOtherProfileScreenState extends State<ViewOtherProfileScreen> {
       barrierColor: Colors.black45,
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (BuildContext buildContext, Animation animation, Animation secondaryAnimation) {
-        return Scaffold(
+        return WillPopScope(
+     onWillPop: () async {
+      context.pop();
+      return false;
+     },
+     child: Scaffold(
           appBar: AppBar(
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
@@ -267,26 +289,7 @@ class _ViewOtherProfileScreenState extends State<ViewOtherProfileScreen> {
               ),
             ],
           ),
-        );
-      },
-    );
-  }
-
-  void showStatusDialog(String content){
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Hi there'),
-          content: Text(content),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                context.pushNamed("inbox", pathParameters: {'currentUserName': _name!, 'currentUserEmail': email!});
-              },
-              child: const Text('OK'),
-            ),
-          ],
+     ),
         );
       },
     );

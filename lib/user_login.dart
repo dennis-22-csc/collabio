@@ -7,6 +7,7 @@ import 'package:collabio/database.dart';
 import 'package:collabio/model.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class LoginScreen extends StatefulWidget {
 
@@ -98,7 +99,11 @@ class _LoginScreenState extends State<LoginScreen> {
             return;
           }
       }
-          
+
+      String? token = await FirebaseMessaging.instance.getToken();
+      SharedPreferencesUtil.saveToken(token!);
+      profileInfoModel.updateMyToken();
+      
       final projectResult = await fetchProjectsFromApi();
       final List<String> receivedMessageIds = await DatabaseHelper.getMessageIdsWithStatus("received");
 
@@ -107,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
         List<String> tags = (await SharedPreferencesUtil.getTags());
         WidgetsBinding.instance.addPostFrameCallback((_) async {
         final projectsModel = Provider.of<ProjectsModel>(context, listen: false);
-        projectsModel.updateProjects(tags, 10);
+        projectsModel.updateProjects(tags, 0, 10);
         });
       } else {
         _showError("Unable to fetch dependencies at the moment.");
@@ -127,17 +132,19 @@ class _LoginScreenState extends State<LoginScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
       //Get initial messages from local database
       final messagesModel = Provider.of<MessagesModel>(context, listen: false);
-       messagesModel.updateGroupedMessages(email);
-
+      final profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
+      messagesModel.updateGroupedMessages(email);
+      profileInfoModel.updateUsers();
       //Set up web socket for new messages
-      await connectToSocket(messagesModel, email);
+      await connectToSocket(profileInfoModel, messagesModel, email);
 
       // Resend unsent messages
       final messages = await DatabaseHelper.getUnsentMessages();
       if (messages.isNotEmpty) {
         for (var message in messages) {
-          await sendMessageData(messagesModel, message, email);
+          await sendMessageData(profileInfoModel, messagesModel, message, email);
         }
+        profileInfoModel.updateSilentSend(true);
       }
       });
       
@@ -204,9 +211,15 @@ Widget build(BuildContext context) {
 Widget buildLoginScreen() {
   return Consumer<ProfileInfoModel>(
       builder: (context, profileInfoModel, _) {
-  return Scaffold(
+  return WillPopScope(
+     onWillPop: () async {
+      context.pop();
+      return false;
+     },
+     child: Scaffold(
     appBar: AppBar(
       title: const Text('Login'),
+      automaticallyImplyLeading: false,
     ),
     resizeToAvoidBottomInset: false,
     body: SingleChildScrollView(
@@ -274,7 +287,7 @@ Widget buildLoginScreen() {
                   const SizedBox(height: 8.0),
                   ElevatedButton(
                     onPressed: () {
-                       context.goNamed("registration");
+                       context.pushNamed("registration");
                     },
                     child: const Text('Create Account'),
                   ),
@@ -282,7 +295,7 @@ Widget buildLoginScreen() {
               ),
               ElevatedButton(
                 onPressed: () {
-                  context.goNamed("password-reset");
+                  context.pushNamed("password-reset");
                 },
                 child: const Text('Forgot Password?'),
               ),
@@ -291,6 +304,7 @@ Widget buildLoginScreen() {
         ),
       ),
     ),
+     ),
   );
   },
   );

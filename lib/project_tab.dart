@@ -29,10 +29,44 @@ class RecentProjectsTab extends StatelessWidget {
 }
 
 
-class ProjectsListWidget extends StatelessWidget {
-  final List<Project> projects;
+class ProjectsListWidget extends StatefulWidget {
+  final Set<Project> projects;
 
   const ProjectsListWidget({Key? key, required this.projects}) : super(key: key);
+
+  @override
+  State<ProjectsListWidget> createState() => _ProjectsListWidgetState();
+}
+class _ProjectsListWidgetState extends State<ProjectsListWidget> {
+  final ScrollController _scrollController = ScrollController();
+  ProjectsModel? projectsModel;
+  ProfileInfoModel? profileInfoModel;
+  
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_scrollListener);
+  }
+
+    @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.extentAfter < 200) {
+      profileInfoModel!.updateProjectBounds();  
+
+      if (profileInfoModel!.didSearch) {
+       projectsModel!.updateProjectsForSearch(profileInfoModel!.searchKeywords, profileInfoModel!.projectLowerBound, profileInfoModel!.projectUpperBound);
+      } else {
+       projectsModel!.updateProjects(profileInfoModel!.tags!,  profileInfoModel!.projectLowerBound, profileInfoModel!.projectUpperBound);
+      }
+              
+    }
+  }
 
   void _navigateToProjectScreen(BuildContext context, Project project) {
     context.pushNamed("view-project", extra: project);
@@ -40,11 +74,14 @@ class ProjectsListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    projectsModel = Provider.of<ProjectsModel>(context);
+    profileInfoModel = Provider.of<ProfileInfoModel>(context);
     return ListView.separated(
-      itemCount: projects.length,
+      controller: _scrollController,
+      itemCount: widget.projects.length,
       separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (context, index) {
-        final project = projects[index];
+        final project = widget.projects.toList()[index];
         return ListTile(
           onTap: () => _navigateToProjectScreen(context, project),
           title: Text(

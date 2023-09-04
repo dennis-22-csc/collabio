@@ -1,7 +1,7 @@
 name: collabio
 description: A platform to enable developers and designers to find projects they can collaborate on.
 publish_to: 'none' 
-version: 1.0.0+7
+version: 1.0.0+8
 environment:
   sdk: '>=3.0.3 <4.0.0'
 dependencies:
@@ -16,8 +16,6 @@ dependencies:
   device_preview: ^1.0.0
   shared_preferences: ^2.2.0
   image_picker: ^1.0.1
-  path_provider: ^2.0.15
-  permission_handler: ^10.4.3
   http: ^1.1.0
   socket_io_client: ^2.0.3+1
   intl: ^0.18.0
@@ -32,6 +30,8 @@ dependencies:
   flutter_keyboard_visibility: ^5.4.1
   webview_flutter: ^4.2.4
   flutter_image_compress: ^2.0.4
+  auto_size_text: ^3.0.0
+  marquee: ^2.2.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

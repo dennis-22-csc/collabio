@@ -52,9 +52,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 Widget build(BuildContext context) {
   profileInfoModel = Provider.of<ProfileInfoModel>(context, listen: false);
    
-  return Scaffold(
+  return WillPopScope(
+     onWillPop: () async {
+      context.pop();
+      return false;
+     },
+     child: Scaffold(
     appBar: AppBar(
       title: const Text('Create Account'),
+      automaticallyImplyLeading: false,
     ),
     resizeToAvoidBottomInset: false,
     body: SingleChildScrollView(
@@ -123,7 +129,7 @@ Widget build(BuildContext context) {
                 const SizedBox(height: 8.0),
                 ElevatedButton(
                   onPressed: () {
-                    context.goNamed("login");
+                    context.pushNamed("login");
                   },
                   child: const Text('Login'),
                 ),
@@ -133,7 +139,9 @@ Widget build(BuildContext context) {
         ),
       ),
     ),
-  ));
+  ),
+  ),
+  );
 }
 
 void showStatusDialog(String title, String content){

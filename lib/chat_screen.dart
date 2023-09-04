@@ -27,6 +27,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   late MessagesModel messagesModel;
+  late ProfileInfoModel profileInfoModel;
 
   @override
   void initState() {
@@ -41,12 +42,12 @@ class _ChatScreenState extends State<ChatScreen> {
       "receiver_name": widget.otherPartyName,
       "receiver_email": widget.otherPartyEmail,
       "message": text,
-      "timestamp": DateFormat('yyyy-MM-dd HH:mm:ss')
-        .format(DateTime.now()),
+      "timestamp": DateTime.now().toUtc().microsecondsSinceEpoch.toString(),
       "status": "pending",
     };
     
-    sendMessageData(messagesModel, message, widget.currentUserEmail);
+    sendMessageData(profileInfoModel, messagesModel, message, widget.currentUserEmail);
+    profileInfoModel.updateSilentSend(true);
   }
 
   } 
@@ -54,12 +55,19 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     messagesModel = Provider.of<MessagesModel>(context);
+    profileInfoModel = Provider.of<ProfileInfoModel>(context);
+       
     final messages = messagesModel.groupedMessages[widget.otherPartyEmail] ?? [];
 
     List<String> oldestMessageIds = Util.getOldestMessageIdsGroupedBy24Hours(messages);
 
 
-    return Scaffold(
+    return WillPopScope(
+     onWillPop: () async {
+      context.pop();
+      return false;
+     },
+     child: Scaffold(
       appBar: AppBar(
         leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -81,7 +89,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 // Check if a date separator should be added
                 if (oldestMessageIds.contains(message.id)) {
                   final separatorText = _getSeparatorText(message.timestamp);
-
                   return Column(
                     children: [
                       _buildDateSeparator(separatorText),
@@ -97,12 +104,14 @@ class _ChatScreenState extends State<ChatScreen> {
           _buildMessageComposer(context),
         ],
       ),
+    ),
     );
   }
 
  
 String _getSeparatorText(String timestamp) {
-  final DateTime messageTime = DateTime.parse(timestamp);
+  final preciseTimestamp = int.parse(timestamp);
+  final messageTime = DateTime.fromMicrosecondsSinceEpoch(preciseTimestamp);
   final DateTime now = DateTime.now();
   final DateTime today = DateTime(now.year, now.month, now.day);
   final DateTime yesterday = today.subtract(const Duration(days: 1));
@@ -265,14 +274,6 @@ String _getSeparatorText(String timestamp) {
         ],
       );
     case 'received':
-      if (message.senderEmail == widget.currentUserEmail) {
-        return const Row(
-        children: [
-          SizedBox(width: 4.0),
-          Icon(Icons.check, color: Colors.blue, size: 15),
-        ],
-      );
-      }
       return const SizedBox.shrink();
     default:
       return const SizedBox.shrink();

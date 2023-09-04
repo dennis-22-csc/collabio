@@ -104,7 +104,12 @@ void _onFocusChange() {
     final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final double tagHeight = keyboardHeight + 50;
 
-    return Scaffold(
+    return WillPopScope(
+     onWillPop: () async {
+      context.pop();
+      return false;
+     },
+     child: Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -205,6 +210,7 @@ void _onFocusChange() {
         ],
       ),
       ),
+    ),
     );
   }
 
