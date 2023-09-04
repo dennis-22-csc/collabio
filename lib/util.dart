@@ -182,14 +182,16 @@ static Map<String, dynamic> convertJsonToUserInfo(Map<String, dynamic> jsonData)
     "website design": ["web", "web development", "web design", "website development", "website design", "web app", "web application development"],
     "web app": ["web", "web development", "web design", "website development", "website design", "web app", "web application development"],
     "web application development": ["web", "web development", "web design", "website development", "website design", "web app", "web application development"],
-    "android development": ["android development", "android app development", "android application development", "android"],
-    "android app development": ["android development", "android app development", "android application development", "android"],
-    "android application development": ["android development", "android app development", "android application development", "android"],
-    "android": ["android development", "android app development", "android application development", "android"],
-    "ios": ["ios development", "ios app development", "ios application development", "ios"],
-    "ios application development": ["ios development", "ios app development", "ios application development", "ios"],
-    "ios app development": ["ios development", "ios app development", "ios application development", "ios"],
-    "ios development": ["ios development", "ios app development", "ios application development", "ios"],
+    "android development": ["app development", "android development", "android app development", "android application development", "android"],
+    "android app development": ["app development", "android development", "android app development", "android application development", "android"],
+    "android application development": ["app development","android development", "android app development", "android application development", "android"],
+    "android": ["app development", "android development", "android app development", "android application development", "android"],
+    "ios": ["app development", "ios development", "ios app development", "ios application development", "ios"],
+    "ios application development": ["app development", "ios development", "ios app development", "ios application development", "ios"],
+    "ios app development": ["app development", "ios development", "ios app development", "ios application development", "ios"],
+    "ios development": ["app development", "ios development", "ios app development", "ios application development", "ios"],
+    "app development": ["app development", "ios development", "ios app development", "ios application development", "ios", "android development", "android app development", "android application development", "android"],
+  
   };
 
   keywords = keywords.map((keyword) => keyword.toLowerCase()).toList();

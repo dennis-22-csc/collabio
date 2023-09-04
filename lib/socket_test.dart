@@ -233,7 +233,7 @@ void main() async {
     "sender_email": "alimatsadiat@gmail.com",
     "receiver_name": "Dennis Akpotaire",
     "receiver_email": "dennisthebusinessguru@gmail.com",
-    "message": "Can you tell me a bit about your background?",
+    "message": "I'm good too...",
     "timestamp": DateTime.now().toUtc().microsecondsSinceEpoch.toString(),
     "status": "pending",
   };
@@ -244,7 +244,7 @@ void main() async {
     "sender_email": "olasmith@gmail.com",
     "receiver_name": "Dennis Akpotaire",
     "receiver_email": "dennisthebusinessguru@gmail.com",
-    "message": "I'm fine too.",
+    "message": "Okay. I'll be waiting.",
     "timestamp": DateTime.now().toUtc().microsecondsSinceEpoch.toString(),
     "status": "pending",
   };
@@ -395,11 +395,11 @@ If you are interested in contributing to this app and helping people achieve the
 }
 ];
 
- //final messageResponse = await dataSender.sendMessageData(message1);
- //print(messageResponse);
+ final messageResponse = await dataSender.sendMessageData(message2);
+ print(messageResponse);
   
-  final projectResponse = await dataSender.sendProjectData(project3);
-  print('Project response: $projectResponse');
+  //final projectResponse = await dataSender.sendProjectData(project3);
+  //print('Project response: $projectResponse');
   /*const imageUrl = 'https://ucarecdn.com/a59c6d79-1baf-412f-bf78-c7d7a7e31712/image14.jpg';
   final response = await http.get(Uri.parse(imageUrl));
 
