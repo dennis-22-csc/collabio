@@ -58,7 +58,9 @@ class _LoginScreenState extends State<LoginScreen> {
         });
         // Fetch dependencies
         await fetchApiData(userCredential.user, email);
-      } 
+      } else {
+        context.goNamed("email-verification");
+      }
     } on FirebaseAuthException catch (e) {
       String message;
       if (e.code == 'invalid-email') {

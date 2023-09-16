@@ -116,6 +116,34 @@ class _ViewProjectScreenState extends State<ViewProjectScreen> {
                 p: const TextStyle(fontSize: 16.0),
               ),
             ),
+            const SizedBox(height: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Tags',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(
+                      height: 50,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: project.tags.length,
+                        itemBuilder: (context, index) {
+                          return Padding (
+                            padding: const EdgeInsets.only(right: 10, top: 10),
+                            child: Chip(
+                              label: Padding(
+                                padding: const EdgeInsets.only(bottom: 18),
+                                child: Text(project.tags[index]),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
             const SizedBox(height: 24.0),
             const Text(
               'About the poster',
